@@ -1,6 +1,9 @@
 import { EventDetails } from "@/components/quotation/EventDetails";
 
 
+const [eventDetails, setEventDetails] = React.useState
+
+
 export function QuotationPage() {
     return (
     <>
