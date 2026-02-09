@@ -34,14 +34,13 @@ type EventDetailsProps = {
 
 export function EventDetails( {eventDate, guestCount, onEventDateChange, onGuestCountChange} : EventDetailsProps) {
   const [open, setOpen] = React.useState(false)
-  const [date, setDate] = React.useState<Date | undefined>(undefined)
     return (
     
     <Card>
   <CardHeader>
     <CardTitle>Event Details</CardTitle>
     <CardDescription>Tell us about your event</CardDescription>
-    {/* <CardAction>Card Action</CardAction> */}
+
   </CardHeader>
   <CardContent>
      <Field>
@@ -53,17 +52,18 @@ export function EventDetails( {eventDate, guestCount, onEventDateChange, onGuest
             id="date"
             className="justify-start font-normal"
           >
-            {date ? date.toLocaleDateString() : "Select date"}
+            {eventDate ? eventDate.toLocaleDateString() : "Select date"}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto overflow-hidden p-0" align="start">
           <Calendar
             mode="single"
-            selected={date}
-            defaultMonth={date}
+            selected={eventDate}
+            defaultMonth={eventDate}
             captionLayout="dropdown"
             onSelect={(date) => {
-              setDate(date)
+              // console.log("Selected date in EventDetails:", date)
+              onEventDateChange(date)
               setOpen(false)
             }}
           />
@@ -72,14 +72,23 @@ export function EventDetails( {eventDate, guestCount, onEventDateChange, onGuest
     </Field>
        <Field>
           <FieldLabel htmlFor="username">Number of Guests</FieldLabel>
-          <Input id="username" type="text" placeholder="Input number of guests" />
+          <Input 
+          id="username" 
+          type="number" 
+          placeholder="Input number of guests" 
+          value={guestCount}
+          onChange={(e) => {
+            // console.log("Guest count changed:", value)
+            const value = Number(e.target.value)
+
+            onGuestCountChange(value)
+          }}
+           />
         </Field>
 
     
   </CardContent>
-  <CardFooter>
-    <p>Card Footer</p>
-  </CardFooter>
+
 </Card>
     )
     
