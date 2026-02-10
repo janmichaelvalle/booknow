@@ -1,16 +1,8 @@
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { Button } from "../ui/button"
 import { Calendar } from "../ui/calendar"
-import { Field,  FieldLabel, FieldDescription} from "../ui/field"
+import { Field, FieldLabel, FieldDescription, FieldError } from "../ui/field"
 import { useState } from "react"
 import {
   Popover,
@@ -20,76 +12,94 @@ import {
 
 import { Input } from "@/components/ui/input"
 import * as React from "react"
+import { Controller } from "react-hook-form"
+import type { Control } from "react-hook-form"
 
+
+type FormValues = {
+  eventDate: Date
+  guestCount: undefined
+  selectedPackage: "classic" | "vintage"
+}
 
 type EventDetailsProps = {
-  eventDate?: Date
-  guestCount: number
-  onEventDateChange: (date: Date | undefined) => void
-  onGuestCountChange: (count: number) => void
+  control: Control<FormValues>
 }
 
 
-
-
-export function EventDetails( {eventDate, guestCount, onEventDateChange, onGuestCountChange} : EventDetailsProps) {
+export function EventDetails({ control }: EventDetailsProps) {
   const [open, setOpen] = React.useState(false)
-    return (
-    
+
+  return (
+
     <Card>
-  <CardHeader>
-    <CardTitle>Event Details</CardTitle>
-    <CardDescription>Tell us about your event</CardDescription>
+      <CardHeader>
+        <CardTitle>Event Details</CardTitle>
+        <CardDescription>Tell us about your event</CardDescription>
 
-  </CardHeader>
-  <CardContent>
-     <Field>
-      <FieldLabel htmlFor="date"> Event Date</FieldLabel>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            id="date"
-            className="justify-start font-normal"
-          >
-            {eventDate ? eventDate.toLocaleDateString() : "Select date"}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto overflow-hidden p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={eventDate}
-            defaultMonth={eventDate}
-            captionLayout="dropdown"
-            onSelect={(date) => {
-              // console.log("Selected date in EventDetails:", date)
-              onEventDateChange(date)
-              setOpen(false)
-            }}
-          />
-        </PopoverContent>
-      </Popover>
-    </Field>
-       <Field>
-          <FieldLabel htmlFor="username">Number of Guests</FieldLabel>
-          <Input 
-          id="username" 
-          type="number" 
-          placeholder="Input number of guests" 
-          value={guestCount}
-          onChange={(e) => {
-            // console.log("Guest count changed:", value)
-            const value = Number(e.target.value)
+      </CardHeader>
+      <CardContent>
+        <Controller
+          name="eventDate"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field>
+              <FieldLabel htmlFor="date"> Event Date</FieldLabel>
+              <Popover open={open} onOpenChange={setOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    id="date"
+                    className="justify-start font-normal"
+                  >
+                    {field.value ? field.value.toLocaleDateString() : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={field.value}
+                    defaultMonth={field.value}
+                    captionLayout="dropdown"
+                    onSelect={(date) => {
+                      field.onChange(date)
+                      setOpen(false) // Close popover after date pick
+                    }}
+                  />
+                </PopoverContent>
+              </Popover>
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
 
-            onGuestCountChange(value)
-          }}
-           />
-        </Field>
+        />
+        <Controller
+          name="guestCount"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="guestCount">Number of Guests</FieldLabel>
+              <Input
+                id="guestCount"
+                type="number"
+                min={1}
+                placeholder="Input number of guests"
+                value={field.value}
+                onChange={(e) => {
+                 const raw = e.target.value
+                 const num = raw === "" ? undefined : Number(raw)
+                 // If user entered 0 or negative, force it to 1.
+                 field.onChange(num !== undefined && num < 1 ? 1 : num)
+                }}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
 
-    
-  </CardContent>
+      </CardContent>
 
-</Card>
-    )
-    
+    </Card>
+  )
+
 }

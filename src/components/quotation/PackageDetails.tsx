@@ -1,35 +1,25 @@
-import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-  FieldLegend,
-  FieldSet,
-  FieldTitle,
-} from "@/components/ui/field"
+import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldSet, FieldTitle } from "@/components/ui/field"
 
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card"
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Controller } from "react-hook-form"
+import type { Control } from "react-hook-form"
 
 
 type PackageDetailsProps = {
-    selectedPackage: string
-    onPackageChange: (value: string) => void
     classicPackagePrice: number
     vintagePackagePrice: number
+    control: Control<FormValues>
 }
 
-export function PackageDetails( {selectedPackage, onPackageChange, classicPackagePrice, vintagePackagePrice}: PackageDetailsProps) {
+type FormValues = {
+  eventDate: Date
+  guestCount: undefined
+  selectedPackage: "classic" | "vintage"
+}
+
+export function PackageDetails( { classicPackagePrice, vintagePackagePrice, control}: PackageDetailsProps) {
   return (
     
     <>
@@ -39,18 +29,22 @@ export function PackageDetails( {selectedPackage, onPackageChange, classicPackag
         <CardDescription>Choose the perfect package for your event</CardDescription>
       </CardHeader>
        <CardContent>
-        <FieldGroup>
+        <Controller 
+        name = "selectedPackage"
+        control={control}
+        render = {({ field, fieldState}) => (
+            <FieldGroup>
       <FieldSet>
         <RadioGroup 
-        value={selectedPackage}
-        onValueChange={onPackageChange}
+        value={field.value}
+        onValueChange={field.onChange}
         >
           <FieldLabel htmlFor="classic">
             <Field orientation="horizontal">
               <FieldContent>
                 <FieldTitle>Classic Package</FieldTitle>
                 <FieldDescription>
-                  Price: {classicPackagePrice}
+                   Price: {classicPackagePrice > 0 ? classicPackagePrice : "Enter guest count first"}
                 </FieldDescription>
                 <FieldDescription>
                   Glassware: Shot Glasses
@@ -70,7 +64,7 @@ export function PackageDetails( {selectedPackage, onPackageChange, classicPackag
               <FieldContent>
                 <FieldTitle>Vintage Package</FieldTitle>
                  <FieldDescription>
-                  Price: {vintagePackagePrice}
+                   Price: {vintagePackagePrice > 0 ? vintagePackagePrice : "Enter guest count first"}
                 </FieldDescription>
                 <FieldDescription>
                   Glassware: Cocktail Glasses
@@ -88,6 +82,10 @@ export function PackageDetails( {selectedPackage, onPackageChange, classicPackag
         </RadioGroup>
       </FieldSet>
     </FieldGroup>
+
+        )}
+        />
+      
        </CardContent>
     </Card>
     
