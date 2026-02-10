@@ -84,7 +84,7 @@ export function EventDetails({ control }: EventDetailsProps) {
                 type="number"
                 min={1}
                 placeholder="Input number of guests"
-                value={field.value}
+                value={field.value ?? ""}
                 onChange={(e) => {
                  const raw = e.target.value
                  const num = raw === "" ? undefined : Number(raw)
