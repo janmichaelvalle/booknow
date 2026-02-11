@@ -1,10 +1,16 @@
+import {Routes, Route} from "react-router-dom"
 import { QuotationPage } from "./pages/QuotationPage"
+import { ReservationPage } from "./pages/ReservationPage"
+
 
 function App() {
 
 
   return (
-    <QuotationPage />
+     <Routes>
+      <Route path="/" element={<QuotationPage />} />
+      <Route path="/reservation" element={<ReservationPage />} />
+    </Routes>
   )
 }
 

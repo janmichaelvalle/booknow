@@ -15,7 +15,7 @@ type PackageDetailsProps = {
 
 type FormValues = {
   eventDate: Date
-  guestCount: undefined
+  guestCount: number
   selectedPackage: "classic" | "vintage"
 }
 
@@ -32,7 +32,7 @@ export function PackageDetails( { classicPackagePrice, vintagePackagePrice, cont
         <Controller 
         name = "selectedPackage"
         control={control}
-        render = {({ field, fieldState}) => (
+        render = {({ field }) => (
             <FieldGroup>
       <FieldSet>
         <RadioGroup 

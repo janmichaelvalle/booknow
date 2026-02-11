@@ -2,8 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { Button } from "../ui/button"
 import { Calendar } from "../ui/calendar"
-import { Field, FieldLabel, FieldDescription, FieldError } from "../ui/field"
-import { useState } from "react"
+import { Field, FieldLabel, FieldError } from "../ui/field"
 import {
   Popover,
   PopoverContent,
@@ -18,7 +17,7 @@ import type { Control } from "react-hook-form"
 
 type FormValues = {
   eventDate: Date
-  guestCount: undefined
+  guestCount: number
   selectedPackage: "classic" | "vintage"
 }
 
