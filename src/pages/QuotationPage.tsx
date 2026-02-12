@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useLocation } from "react-router-dom"
+import { useEffect } from "react";
 
 
 
@@ -18,9 +19,12 @@ const quotationSchema = z.object({
 
 export function QuotationPage() {
 
-  let navigate = useNavigate()
+  const navigate = useNavigate()
+  const location = useLocation()
 
-  const form = useForm<z.infer<typeof quotationSchema>>({
+  const incoming = location.state as QuotationValues | undefined   // This is the values coming from reservation page when user wants to edit
+
+   const form = useForm<z.infer<typeof quotationSchema>>({
     resolver: zodResolver(quotationSchema),
     defaultValues: {
       eventDate: undefined,
@@ -28,6 +32,21 @@ export function QuotationPage() {
       selectedPackage: "classic",
     },
   })
+
+  
+  useEffect(() => {
+  if (incoming) {
+    form.reset({
+      eventDate: new Date(incoming.eventDate),
+      guestCount: incoming.guestCount,
+      selectedPackage: incoming.selectedPackage,
+    })
+  }
+}, [incoming, form])
+
+
+ 
+
 
     const classicPackagePrice = form.watch("guestCount") * 50
     const vintagePackagePrice = form.watch("guestCount") * 100
