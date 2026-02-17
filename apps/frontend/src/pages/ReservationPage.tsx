@@ -1,6 +1,7 @@
 import { useLocation, Navigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
+import { useEffect } from "react"
 
 
 
@@ -13,7 +14,19 @@ type QuotationValues = {
 
 
 
+
+
 export function ReservationPage() {
+
+    useEffect(() => {
+  async function loadReservations() {
+    const res = await fetch("http://localhost:3000/api/reservations")
+    const json = await res.json()
+    console.log("All reservations:", json)
+  }
+
+  loadReservations()
+}, [])
 
     const navigate = useNavigate()
     const location = useLocation() // Gets route info object for current page
@@ -27,7 +40,7 @@ export function ReservationPage() {
             <h1>Number of guests: {state.guestCount}</h1>
             <h1>Package: {state.selectedPackage}</h1>
             <h1>Total Price: {state.selectedPackagePrice}</h1>
-            <Button type="submit" onClick={() =>
+            <Button type="button" onClick={() =>
                 navigate("/", {
                     state: {
                         eventDate: state.eventDate,

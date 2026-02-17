@@ -45,18 +45,33 @@ export function QuotationPage() {
 }, [incoming, form])
 
 
- 
-
 
     const classicPackagePrice = form.watch("guestCount") * 50
     const vintagePackagePrice = form.watch("guestCount") * 100
 
-  function onSubmit(data: z.infer<typeof quotationSchema>) {
+  async function onSubmit(data: z.infer<typeof quotationSchema>) {
     
     const selectedPackagePrice =
     data.selectedPackage === "classic"
       ? classicPackagePrice
       : vintagePackagePrice
+    
+    const payload = {
+      eventDate: data.eventDate.toISOString(),
+      guestCount: data.guestCount,
+      selectedPackage: data.selectedPackage,
+    }
+
+    const res = await fetch("http://localhost:3000/api/reservations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    })
+
+    if (!res.ok) {
+    console.error("Failed to create reservation")
+    return
+  }
 
     navigate("/reservation", { state: {
       ...data, selectedPackagePrice
