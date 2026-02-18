@@ -2,15 +2,10 @@ import { useLocation, Navigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
 import { useEffect } from "react"
+import { type QuotationValues } from "@/lib/types"
 
 
 
-type QuotationValues = {
-    eventDate: Date
-    guestCount: number
-    selectedPackage: "classic" | "vintage"
-    selectedPackagePrice: number
-}
 
 
 

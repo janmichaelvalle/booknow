@@ -1,7 +1,6 @@
 import {Routes, Route} from "react-router-dom"
 import { QuotationPage } from "./pages/QuotationPage"
 import { ReservationPage } from "./pages/ReservationPage"
-import { useEffect } from "react"
 
 
 function App() {
