@@ -62,7 +62,7 @@ export function QuotationPage() {
       selectedPackage: data.selectedPackage,
     }
 
-    const res = await fetch("http://localhost:3000/api/reservations", {
+    const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/reservations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)

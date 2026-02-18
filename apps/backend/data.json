@@ -1,0 +1,29 @@
+{
+  "reservations": [
+    {
+      "id": "r-1",
+      "eventDate": "",
+      "guestCount": 100,
+      "selectedPackage": "classic"
+    },
+    {
+      "id": "8ce94228-928c-49b7-bf95-3937c7f05e98",
+      "eventDate": "2026-02-13T16:00:00.000Z",
+      "guestCount": 50,
+      "selectedPackage": "vintage"
+    },
+    {
+      "id": "21fc4166-faca-4d28-ad7a-0bf7b5b8d071",
+      "eventDate": "2026-02-03T16:00:00.000Z",
+      "guestCount": 50,
+      "selectedPackage": "vintage"
+    },
+    {
+      "id": "8f3a3fa9-9690-44c5-ba67-e5b5b1e6922a",
+      "eventDate": "2026-02-05T16:00:00.000Z",
+      "guestCount": 1,
+      "selectedPackage": "vintage"
+    }
+  ],
+  "other-data": []
+}
