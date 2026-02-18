@@ -1,103 +1,100 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { readFile, writeFile } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
-import path from 'node:path'
-
-
+import { createClient } from '@supabase/supabase-js'
 
 const app = new Hono()
 
-
-app.get('/api/health', (c) => c.json({ ok: true })) // Confirm if backend is live
+app.get('/api/health', (c) => c.json({ ok: true }))
 
 if (!process.env.CORS_ORIGIN) {
-    throw new Error("CORS_ORIGIN must be defined");
+  throw new Error('CORS_ORIGIN must be defined')
+}
+if (!process.env.SUPABASE_URL) {
+  throw new Error('SUPABASE_URL must be defined')
+}
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+  throw new Error('SUPABASE_SERVICE_ROLE_KEY must be defined')
 }
 
-app.use('*', cors({ origin: process.env.CORS_ORIGIN })) // middleware for all routes (* means every path).
+app.use('*', cors({ origin: process.env.CORS_ORIGIN }))
+
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
 type SelectedPackage = 'classic' | 'vintage'
 
 type Reservation = {
-    id: string
-    eventDate: string
-    guestCount: number
-    selectedPackage: SelectedPackage
+  id: string
+  eventDate: string
+  guestCount: number
+  selectedPackage: SelectedPackage
 }
 
-type DataStore = {
-    reservations: Reservation[]
-    'other-data': unknown[]
+type ReservationRow = {
+  id: string
+  event_date: string
+  guest_count: number
+  selected_package: SelectedPackage
 }
-
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
-const dataFilePath = path.resolve(__dirname, '../data.json')
-
-async function readDataStore(): Promise<DataStore> {
-    const fileContent = await readFile(dataFilePath, 'utf-8')
-    const parsed = JSON.parse(fileContent) as Partial<DataStore>
-
-    return {
-        reservations: Array.isArray(parsed.reservations) ? parsed.reservations : [],
-        'other-data': Array.isArray(parsed['other-data']) ? parsed['other-data'] : [],
-    }
-}
-
-async function writeDataStore(data: DataStore): Promise<void> {
-    await writeFile(dataFilePath, JSON.stringify(data, null, 2), 'utf-8')
-}
-
-
-/* (c) explainer
-(c) => ... is the handler function.
-c means context (from Hono). Think of it as a “request + response toolbox”.
-
-Inside c, you can do things like:
-c.req -> read request data (body, query, params, headers)
-c.json(...) -> return JSON response
-c.text(...) -> return plain text
-c.status(...) -> set status code
-
-*/
-
 
 app.get('/api/reservations', async (c) => {
-    const dataStore = await readDataStore()
-    console.log('GET length:', dataStore.reservations.length, dataStore.reservations)
-    return c.json({
-        message: "success",
-        data: dataStore.reservations
-    })
-})
+  const { data: rows, error } = await supabase
+    .from('reservations')
+    .select('id,event_date,guest_count,selected_package')
+    .order('created_at', { ascending: false })
 
+  if (error) {
+    return c.json({ message: 'Failed to fetch reservations', error: error.message }, 500)
+  }
+
+  const reservations: Reservation[] = rows.map((row) => ({
+    id: row.id,
+    eventDate: row.event_date,
+    guestCount: row.guest_count,
+    selectedPackage: row.selected_package,
+  }))
+
+  return c.json({
+    message: 'success',
+    data: reservations,
+  })
+})
 
 app.post('/api/reservations', async (c) => {
-    const body = await c.req.json()
-    const dataStore = await readDataStore()
+  const body = await c.req.json()
 
-    const newReservation: Reservation = {
-        id: crypto.randomUUID(),
-        eventDate: String(body.eventDate),
-        guestCount: Number(body.guestCount),
-        selectedPackage: body.selectedPackage as SelectedPackage,
-    }
+  const payload = {
+    event_date: String(body.eventDate),
+    guest_count: Number(body.guestCount),
+    selected_package: body.selectedPackage as SelectedPackage,
+  }
 
-    dataStore.reservations.push(newReservation)
-    await writeDataStore(dataStore)
-    console.log('POST length:', dataStore.reservations.length, newReservation)
+  const { data: rows, error } = await supabase
+    .from('reservations')
+    .insert(payload)
+    .select('id,event_date,guest_count,selected_package')
 
-
-
+  if (error || !rows?.length) {
     return c.json(
-        {
-            message: 'Reservation created successfully',
-            data: newReservation,
-        },
-        201
+      { message: 'Failed to create reservation', error: error?.message ?? 'No row returned' },
+      500
     )
-})
+  }
 
+  const inserted = rows[0] as ReservationRow
+  const newReservation: Reservation = {
+    id: inserted.id,
+    eventDate: inserted.event_date,
+    guestCount: inserted.guest_count,
+    selectedPackage: inserted.selected_package,
+  }
+
+  return c.json(
+    {
+      message: 'Reservation created successfully',
+      data: newReservation,
+    },
+    201
+  )
+})
 
 export default app

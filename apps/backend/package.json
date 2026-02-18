@@ -2,6 +2,7 @@
   "name": "booknow-backend",
   "type": "module",
   "dependencies": {
+    "@supabase/supabase-js": "^2.96.0",
     "hono": "^4.11.9"
   },
   "devDependencies": {
