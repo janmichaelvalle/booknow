@@ -13,15 +13,7 @@ import { type QuotationValues } from "@/lib/types"
 
 export function ReservationPage() {
 
-    useEffect(() => {
-  async function loadReservations() {
-    const res = await fetch("http://localhost:3000/api/reservations")
-    const json = await res.json()
-    console.log("All reservations:", json)
-  }
-
-  loadReservations()
-}, [])
+   
 
     const navigate = useNavigate()
     const location = useLocation() // Gets route info object for current page

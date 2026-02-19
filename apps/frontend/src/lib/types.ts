@@ -6,3 +6,9 @@ export type QuotationValues = {
 }
 
 
+export type Reservation = {
+  id: string
+  eventDate: string
+  guestCount: number
+  selectedPackage: "classic" | "vintage"
+}

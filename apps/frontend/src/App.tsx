@@ -1,6 +1,7 @@
 import {Routes, Route} from "react-router-dom"
 import { QuotationPage } from "./pages/QuotationPage"
 import { ReservationPage } from "./pages/ReservationPage"
+import { ReservationsListPage } from "./pages/ReservationsListPage"
 
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
      <Routes>
       <Route path="/" element={<QuotationPage />} />
       <Route path="/reservation" element={<ReservationPage />} />
+      <Route path ="/reservations" element={<ReservationsListPage />} />
     </Routes>
   )
 }
