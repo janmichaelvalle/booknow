@@ -21,7 +21,7 @@ export function ReservationsListPage () {
     // async means that the function will do something that takes time
     async function loadReservations() {
     // awat means pause this function here until fetch finishes
-    const res = await fetch("http://localhost:3000/api/reservations")
+    const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/reservations`)
     const json = await res.json()
     setReservations(json.data)
     
