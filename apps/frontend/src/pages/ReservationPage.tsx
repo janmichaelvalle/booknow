@@ -1,32 +1,58 @@
-import { useLocation, Navigate } from "react-router-dom"
+import { useParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
-import { type QuotationValues } from "@/lib/types"
+import { type Reservation } from "@/lib/types"
+import { useEffect, useState } from "react"
 
 
 
 export function ReservationPage() {
 
-   
+
+
 
     const navigate = useNavigate()
-    const location = useLocation() // Gets route info object for current page
-    const state = location.state as QuotationValues | undefined // Gets the passed data(location.state) as QuotationValues
+    const { reservationNo } = useParams()
+    const [reservation, setReservation] = useState<Reservation | null>(null)
 
-    if (!state) return <Navigate to="/" replace />
+    useEffect(() => {
+        if (!reservationNo) return
+
+        async function loadReservation() {
+            const res = await fetch(
+                `${import.meta.env.VITE_BASE_URL}/api/reservations/${reservationNo}`
+            )
+            if (!res.ok) return
+
+            const json = await res.json()
+            setReservation(json.data)
+        }
+
+        loadReservation()
+    }, [reservationNo])
+
+
+
+
+    if (!reservation) return <p>Reservation not found.</p>
+
+    const totalPrice =
+        reservation.selectedPackage === "classic"
+            ? reservation.guestCount * 50
+            : reservation.guestCount * 100
 
     return (
         <>
-            <h1>Event Date: {new Date(state.eventDate).toLocaleDateString()}</h1>
-            <h1>Number of guests: {state.guestCount}</h1>
-            <h1>Package: {state.selectedPackage}</h1>
-            <h1>Total Price: {state.selectedPackagePrice}</h1>
+            <h1>Event Date: {new Date(reservation.eventDate).toLocaleDateString()}</h1>
+            <h1>Number of guests: {reservation.guestCount}</h1>
+            <h1>Package: {reservation.selectedPackage}</h1>
+            <h1>Total Price: {totalPrice}</h1>
             <Button type="button" onClick={() =>
                 navigate("/", {
                     state: {
-                        eventDate: state.eventDate,
-                        guestCount: state.guestCount,
-                        selectedPackage: state.selectedPackage,
+                        eventDate: reservation.eventDate,
+                        guestCount: reservation.guestCount,
+                        selectedPackage: reservation.selectedPackage,
                     }
                 })}>
                 Edit quotation

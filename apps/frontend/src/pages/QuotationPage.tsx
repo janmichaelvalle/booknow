@@ -74,13 +74,17 @@ export function QuotationPage() {
     return
   }
 
-    navigate("/reservation", { state: {
-      ...data, selectedPackagePrice
-    } })
+  const json = await res.json()
+  const reservationId = json?.data?.id
+
+  if (!reservationId) {
+  console.error("Reservation ID missing in response")
+  return
+}
+
+    navigate(`/reservation/${reservationId}`)
   }
   
-
-
 
   return (
     <>

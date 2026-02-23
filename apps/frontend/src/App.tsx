@@ -23,7 +23,7 @@ function App() {
   return (
      <Routes>
       <Route path="/" element={<QuotationPage />} />
-      <Route path="/reservation" element={<ReservationPage />} />
+      <Route path="/reservation/:reservationNo" element={<ReservationPage />} />
       <Route path ="/reservations" element={<ReservationsListPage />} />
     </Routes>
   )

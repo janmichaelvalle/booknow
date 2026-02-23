@@ -36,6 +36,7 @@ type ReservationRow = {
   selected_package: SelectedPackage
 }
 
+// GET all reservations
 app.get('/api/reservations', async (c) => {
   const { data: rows, error } = await supabase
     .from('reservations')
@@ -59,6 +60,35 @@ app.get('/api/reservations', async (c) => {
   })
 })
 
+// Get reservation 
+app.get('/api/reservations/:reservationNo', async(c) => {
+  const reservationNo = c.req.param('reservationNo')
+  const { data: row, error } = await supabase
+    .from('reservations')
+    .select('id,event_date,guest_count,selected_package')
+    .eq('id', reservationNo)
+    .maybeSingle()
+
+     if (error) {
+    return c.json({ message: 'Failed to fetch reservation', error: error.message }, 500)
+  }
+
+  if (!row) {
+    return c.json({ message: 'Reservation not found' }, 404)
+  }
+
+  const reservation: Reservation = {
+    id: row.id,
+    eventDate: row.event_date,
+    guestCount: row.guest_count,
+    selectedPackage: row.selected_package,
+  }
+
+  return c.json({ message: 'success', data: reservation })
+})
+
+
+// Create a reservation
 app.post('/api/reservations', async (c) => {
   const body = await c.req.json()
 
