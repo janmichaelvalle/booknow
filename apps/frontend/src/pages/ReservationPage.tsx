@@ -9,8 +9,6 @@ import { useEffect, useState } from "react"
 export function ReservationPage() {
 
 
-
-
     const navigate = useNavigate()
     const { reservationNo } = useParams()
     const [reservation, setReservation] = useState<Reservation | null>(null)

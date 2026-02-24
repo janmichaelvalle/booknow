@@ -52,10 +52,10 @@ export function QuotationPage() {
 
   async function onSubmit(data: z.infer<typeof quotationSchema>) {
     
-    const selectedPackagePrice =
-    data.selectedPackage === "classic"
-      ? classicPackagePrice
-      : vintagePackagePrice
+    // const selectedPackagePrice =
+    // data.selectedPackage === "classic"
+    //   ? classicPackagePrice
+    //   : vintagePackagePrice
     
     const payload = {
       eventDate: data.eventDate.toISOString(),
