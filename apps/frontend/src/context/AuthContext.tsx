@@ -20,6 +20,8 @@ export default function AuthProvider({ children }) {
         
     }, [])
 
+    
+
     return (
         // React docs
         <AuthContext value={

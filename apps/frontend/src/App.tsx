@@ -4,6 +4,8 @@ import { QuotationPage } from "./pages/QuotationPage"
 import { ReservationPage } from "./pages/ReservationPage"
 import { ReservationsListPage } from "./pages/ReservationsListPage"
 import { AuthContext } from './context/AuthContext'
+import { LoginPage } from "./pages/LoginPage";
+
 
 function App() {
 
@@ -23,14 +25,9 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={
-
-        <QuotationPage />
-
-      }
-      />
+      <Route path="/" element={<QuotationPage />}/>
       <Route path="/reservation/:reservationNo" element={<ReservationPage />} />
-
+      <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedPage />}>
         <Route path="/reservations" element={<ReservationsListPage />} />
       </Route>
