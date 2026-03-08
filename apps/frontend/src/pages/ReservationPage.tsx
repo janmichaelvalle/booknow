@@ -31,12 +31,20 @@ export function ReservationPage() {
                 `${import.meta.env.VITE_BASE_URL}/api/reservations/${reservationNo}`
             )
             if (!res.ok) {
-                setIsFetching(false)
-                setReservation(null)
+                setIsFetching(false);
+                setReservation(null);
+                /*
+                 return stops the function immediately.
+                 So if res.ok is false:
+                 set loading to false
+                 clear reservation
+                 exit loadReservation() right there
+                */
+                return;
             }
 
             const json = await res.json()
-            
+
             setIsFetching(false)
             setReservation(json.data)
         }
@@ -50,27 +58,36 @@ export function ReservationPage() {
     // }
 
     // Show loading while reservation is still fetching
-    if (!reservation && isFetching) return <p>Loading</p>
+    if (!reservation) {
+        if (isFetching) return <p>Loading</p>;
+        return <p>Reservation not found.</p>;
+    }
+    
+    /*
+    reservationData is just a TypeScript safety alias after null-check.
+    It is not new data.
+    It tells TS: “from here onward, this is definitely not null
+    */
+    const reservationData = reservation;
 
-    if (!reservation && !isFetching) return <p>Reservation not found.</p>
 
     const totalPrice =
-        reservation.selectedPackage === "classic"
-            ? reservation.guestCount * 50
-            : reservation.guestCount * 100
+        reservationData.selectedPackage === "classic"
+            ? reservationData.guestCount * 50
+            : reservationData.guestCount * 100
 
     return (
         <>
-            <h1>Event Date: {new Date(reservation.eventDate).toLocaleDateString()}</h1>
-            <h1>Number of guests: {reservation.guestCount}</h1>
-            <h1>Package: {reservation.selectedPackage}</h1>
+            <h1>Event Date: {new Date(reservationData.eventDate).toLocaleDateString()}</h1>
+            <h1>Number of guests: {reservationData.guestCount}</h1>
+            <h1>Package: {reservationData.selectedPackage}</h1>
             <h1>Total Price: {totalPrice}</h1>
             <Button type="button" onClick={() =>
                 navigate("/", {
                     state: {
-                        eventDate: reservation.eventDate,
-                        guestCount: reservation.guestCount,
-                        selectedPackage: reservation.selectedPackage,
+                        eventDate: reservationData.eventDate,
+                        guestCount: reservationData.guestCount,
+                        selectedPackage: reservationData.selectedPackage,
                     }
                 })}>
                 Edit quotation

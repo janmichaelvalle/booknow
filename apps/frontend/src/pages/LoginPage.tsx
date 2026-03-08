@@ -5,14 +5,12 @@ import { Button } from "@/components/ui/button"
 
 export function LoginPage() {
   const navigate = useNavigate();
-  const { setIsAuthenticated } = useContext(AuthContext);
+  const { login } = useContext(AuthContext);
+;
 
   function handleLogin() {
     // fake login
-    localStorage.setItem("token", "token123");
-    setIsAuthenticated(true);
-
-    // go to protected page
+    login();
     navigate("/reservations");
   }
 

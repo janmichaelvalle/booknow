@@ -1,36 +1,65 @@
-import { useState, useEffect, createContext } from 'react';
+import { useState, useEffect, createContext} from 'react';
+import type { ReactNode } from "react";
+
+
+
+
+type AuthProviderProps = {
+  children: ReactNode;
+};
+
+type AuthContextType = {
+  isAuthenticated: boolean;
+  login: () => void;
+  logout: () => void;
+};
+
+
 
 // createContext React docs
-export const AuthContext = createContext({
+// These are just fallback balues so React knows the shape of the context
+export const AuthContext = createContext<AuthContextType>({
     isAuthenticated: false,
-    setIsAuthenticated: () => { }
+    login: () => { },
+    logout: () => { },
 });
 
 const VALID_TOKEN = "token123";
+const TOKEN_KEY = "token";
 
 // Not in react docs, but we need to wrap the AuthContext to manage auth states
-export default function AuthProvider({ children }) {
+export default function AuthProvider({children}: AuthProviderProps ) {
     // States here
     const [isAuthenticated, setIsAuthenticated] = useState(false)
 
     useEffect(() => {
-        localStorage.setItem("token", "sdaskj123213lsdkaj")
-        // sync isAuthenticated state to localStorage
-        // if there's a backend auth already, fetch the token there and sync localStorage
-        
-    }, [])
+        // Gets the token from localstorage
+        const token = localStorage.getItem(TOKEN_KEY)
 
-    
+        // If the token is valid, setIsAuthenticated will be true
+        setIsAuthenticated(token === VALID_TOKEN)
+          }, [])
 
-    return (
-        // React docs
-        <AuthContext value={
-            {
-                isAuthenticated,
-                setIsAuthenticated
-            }
-        }>
-            {children}
-        </AuthContext>
-    )
+
+        function login() {
+            localStorage.setItem(TOKEN_KEY, VALID_TOKEN);
+            setIsAuthenticated(true);
+        }
+
+        function logout() {
+            localStorage.removeItem(TOKEN_KEY);
+            setIsAuthenticated(false);
+        }
+
+  
+
+
+
+     return (
+        // All components inside this provider can access these values
+    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+        {/* children is just whatever components are wrapped inside the provider. */}
+      {children}
+    </AuthContext.Provider>
+  );
 }

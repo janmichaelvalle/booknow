@@ -18,7 +18,7 @@ function App() {
   //     body: JSON.stringify({
 
   //     })
-  //   })
+  //   }) 
   //   .then((res) => res.json())
   //   .then((data) => console.log(data))
   // }, []) // initial load
