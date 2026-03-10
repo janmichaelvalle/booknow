@@ -10,7 +10,7 @@ import { useEffect } from "react";
 import { type QuotationValues } from "@/lib/types"
 
 
-
+// The quotationSchema validates the user inputs
 const quotationSchema = z.object({
   eventDate: z.date(),
   guestCount: z.number().int().min(1, "Guest count must be at least 1"),

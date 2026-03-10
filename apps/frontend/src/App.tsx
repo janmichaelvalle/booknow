@@ -46,7 +46,7 @@ function ProtectedPage() {
   return <Outlet />
 }
 
-// Custom hook
+// Custom hook (improvement notes: move this alongsie the context it's exposing)
 function useAuth() {
   // Access to react hooks and component lifecycle
 

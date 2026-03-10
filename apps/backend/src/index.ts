@@ -36,6 +36,20 @@ type ReservationRow = {
   selected_package: SelectedPackage
 }
 
+// High-level flow
+
+// 1. Client sends a request to /api/login including the credentails (user & pass)
+// 2. /api/login validates the credentials:
+//  - if valid, respond back with token
+//  - if invalid, respond with error (401)
+// 3. Client saves the token
+// 4. Private api routes are now guarded:
+//  - Client must always pass a VALID token, if invalid, respond back with (401)
+
+app.get('/api/login', async (c) => {
+  
+})
+
 // GET all reservations
 app.get('/api/reservations', async (c) => {
   const { data: rows, error } = await supabase
