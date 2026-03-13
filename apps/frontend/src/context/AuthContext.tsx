@@ -5,6 +5,7 @@ type AuthProviderProps = {
   children: ReactNode;
 };
 
+// Shape of the auth data
 type AuthContextType = {
   isAuthenticated: boolean;
   login: () => void;

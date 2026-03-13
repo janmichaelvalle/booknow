@@ -2,12 +2,13 @@ import { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { AuthContext } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button"
+import useAuth from "@/context/useAuth";
 
 
 export function LoginPage() {
   const navigate = useNavigate();
   // Use the useAuth, instead of directly accessing the AuthContext
-  const { login } = useContext(AuthContext);
+  const { login } = useAuth();
 
 
 

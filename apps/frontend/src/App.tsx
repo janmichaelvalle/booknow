@@ -1,10 +1,9 @@
-import { useContext } from 'react'
 import { Routes, Route, Navigate, Outlet } from "react-router-dom"
 import { QuotationPage } from "./pages/QuotationPage"
 import { ReservationPage } from "./pages/ReservationPage"
-import { ReservationsListPage } from "./pages/ReservationsListPage"
-import { AuthContext } from './context/AuthContext'
+import { ReservationsListPage } from "./pages/ReservationsListPage" 
 import { LoginPage } from "./pages/LoginPage";
+import useAuth from './context/useAuth'
 
 
 function App() {
@@ -46,21 +45,6 @@ function ProtectedPage() {
   return <Outlet />
 }
 
-// Custom hook (improvement notes: move this alongsie the context it's exposing)
-function useAuth() {
-  // Access to react hooks and component lifecycle
 
-  // 1. Check if there's a token saved usually on localStorage (or Cookie)
-  // 2. Return true if there is, otherwise, false
-
-  // React docs
-  const { isAuthenticated } = useContext(AuthContext)
-
-
-
-  return {
-    isAuthenticated,
-  }
-}
 
 export default App
