@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button"
+
 import useAuth from "@/context/useAuth";
+import { LoginForm } from "@/components/login/LoginForm";
 
 
 export function LoginPage() {
@@ -19,7 +20,8 @@ export function LoginPage() {
   return (
     <div>
       <h1>Login Page</h1>
-      <Button onClick={handleLogin}>Log in</Button>
+      {/* Passes prop onSubmit to LoginForm */}
+      <LoginForm onSubmit={handleLogin}/>
     </div>
   );
 }
