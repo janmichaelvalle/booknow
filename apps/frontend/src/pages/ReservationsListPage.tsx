@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+
 import {
   Table,
   TableBody,
@@ -39,7 +39,7 @@ export function ReservationsListPage() {
     return data?.data
   }
 
-  const { data: reservations, isPending, isFetching, error} = useQuery({
+  const { data: reservations, isPending} = useQuery({
     queryKey: ['reservations'],
     queryFn: fetchReservations,
     initialData: []
