@@ -13,8 +13,11 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 
+
+// Props are for data passed in from parent
 type LoginFormProps = {
-  onSubmit: () => void
+  // props should usually describe the function that sends the data upward
+  onSubmit: (email: string, password: string) => void
 }
 
 export function LoginForm({ onSubmit }: LoginFormProps) {
@@ -28,18 +31,36 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Read values ONLY on submit */}
         <form
+        /*
+        onSubmit = event handler and expects a javascript function
+        {} = tells JSX you are putting JavaScript in the slot
+         (e) => { ... } = the function you are putting there
+        */
           onSubmit={(e) => {
+            // stop browser from refreshing the page
             e.preventDefault()
-            onSubmit()
+
+            // FromData reads all the fields in the form
+            // e.currentTarget means: the actual <form> element that was submitted
+            const formData = new FormData(e.currentTarget)
+            const email = String(formData.get("email") ?? "")
+            const password = String(formData.get("password") ?? "")
+
+            // This calls <LoginForm onSubmit={handleLogin} /> from LoginPage.tsx. Basically handleLogin(email, password)
+
+            onSubmit(email, password)
           }}
         >
+
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
                 id="email"
                 type="email"
+                name="email"
                 placeholder="m@example.com"
                 required
               />
@@ -49,7 +70,7 @@ export function LoginForm({ onSubmit }: LoginFormProps) {
                 <FieldLabel htmlFor="password">Password</FieldLabel>
 
               </div>
-              <Input id="password" type="password" required />
+              <Input id="password" type="password" name="password" required />
             </Field>
             <Field>
               <Button type="submit">Login</Button>

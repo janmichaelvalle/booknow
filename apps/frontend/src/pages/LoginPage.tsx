@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-
 import useAuth from "@/context/useAuth";
 import { LoginForm } from "@/components/login/LoginForm";
 
@@ -11,10 +10,12 @@ export function LoginPage() {
 
 
 
-  function handleLogin() {
+  function handleLogin(email: string, password:string) { 
     // fake login
     login();
     navigate("/reservations");
+    console.log(email)
+    console.log(password)
   }
 
   return (

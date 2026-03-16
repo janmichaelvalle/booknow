@@ -46,7 +46,11 @@ type ReservationRow = {
 // 4. Private api routes are now guarded:
 //  - Client must always pass a VALID token, if invalid, respond back with (401)
 
-app.get('/api/login', async (c) => {
+app.post('/api/login', async (c) => {
+  const body = await.c.req.json() // take the incoming request, read as json, and store it in body
+  const email = body.email
+  const password = body.password
+
   
 })
 
