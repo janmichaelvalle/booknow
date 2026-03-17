@@ -47,11 +47,40 @@ type ReservationRow = {
 //  - Client must always pass a VALID token, if invalid, respond back with (401)
 
 app.post('/api/login', async (c) => {
-  const body = await.c.req.json() // take the incoming request, read as json, and store it in body
+  const body = await c.req.json() // take the incoming request, read as json, and store it in body
   const email = body.email
   const password = body.password
 
-  
+  if (!email || !password) {
+    return c.json({ message: 'Email and password are required' }, 400)
+  }
+
+  // const { data: row, error } = await supabase
+  //   .from('users')
+  //   .select('id,email,password_hash')
+  //   .eq('email', email)
+  //   .maybeSingle()
+
+  // .rpc calls the database function
+   const { data: row, error } = await supabase.rpc('verify_login', {
+    user_email: email,
+    user_password: password,
+  })
+
+  if (error) {
+    return c.json({ message: 'Login failed', error: error.message }, 500)
+  }
+
+  if (!row || row.length === 0) {
+    return c.json({ message: 'Invalid credentials' }, 401)
+  }
+
+
+  return c.json({
+    message: 'Login request received',
+    token: 'some-token',
+    user: row[0],
+  })
 })
 
 // GET all reservations
@@ -79,7 +108,7 @@ app.get('/api/reservations', async (c) => {
 })
 
 // Get reservation 
-app.get('/api/reservations/:reservationNo', async(c) => {
+app.get('/api/reservations/:reservationNo', async (c) => {
   const reservationNo = c.req.param('reservationNo')
   const { data: row, error } = await supabase
     .from('reservations')
@@ -87,7 +116,7 @@ app.get('/api/reservations/:reservationNo', async(c) => {
     .eq('id', reservationNo)
     .maybeSingle()
 
-     if (error) {
+  if (error) {
     return c.json({ message: 'Failed to fetch reservation', error: error.message }, 500)
   }
 

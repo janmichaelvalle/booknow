@@ -8,21 +8,43 @@ export function LoginPage() {
   // Use the useAuth, instead of directly accessing the AuthContext
   const { login } = useAuth();
 
+  async function handleLogin(email: string, password: string) {
 
+    // await pauses until the backend responds and const response stores the server's response
+    const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/login`,
+      {
+        method: "POST",
+        headers: {
+          // This tells that backend that FE is sending JSON data.
+          "Content-Type": "application/json"
 
-  function handleLogin(email: string, password:string) { 
-    // fake login
-    login();
-    navigate("/reservations");
-    console.log(email)
-    console.log(password)
+        },
+        // JSON.stringify turns that JavaScript object into a JSON string so it can be sent over HTTP
+        body: JSON.stringify({ email, password }),
+      })
+    const data = await response.json()
+    console.log(response.status)
+    console.log(data)
+    if (!response.ok) {
+      return
+    }
+    login(data.token)
+    navigate("/reservations")
   }
+
+  // function handleLogin(email: string, password:string) { 
+  //   // fake login
+  //   login();
+  //   navigate("/reservations");
+  //   console.log(email)
+  //   console.log(password)
+  // }
 
   return (
     <div>
       <h1>Login Page</h1>
       {/* Passes prop onSubmit to LoginForm */}
-      <LoginForm onSubmit={handleLogin}/>
+      <LoginForm onSubmit={handleLogin} />
     </div>
   );
 }

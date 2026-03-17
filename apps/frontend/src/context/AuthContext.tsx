@@ -8,7 +8,7 @@ type AuthProviderProps = {
 // Shape of the auth data
 type AuthContextType = {
   isAuthenticated: boolean;
-  login: () => void;
+  login: (token: string) => void;
   logout: () => void;
 };
 
@@ -20,7 +20,6 @@ export const AuthContext = createContext<AuthContextType>({
   logout: () => { },
 });
 
-const VALID_TOKEN = "token123";
 const TOKEN_KEY = "token";
 
 // Not in react docs, but we need to wrap the AuthContext to manage auth states (FOCUS ON THIS)
@@ -32,13 +31,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     // Gets the token from localstorage
     const token = localStorage.getItem(TOKEN_KEY)
 
-    // If the token is valid, setIsAuthenticated will be true
-    setIsAuthenticated(token === VALID_TOKEN)
+    // If the token exists, setIsAuthenticated will be true
+    setIsAuthenticated(Boolean(token))
   }, [])
 
 
-  function login() {
-    localStorage.setItem(TOKEN_KEY, VALID_TOKEN);
+  function login(token : string) {
+    localStorage.setItem(TOKEN_KEY, token);
     setIsAuthenticated(true);
   }
 
