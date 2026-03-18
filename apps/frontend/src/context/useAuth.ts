@@ -11,11 +11,11 @@ export default function useAuth() {
   // 2. Return true if there is, otherwise, false
 
   // React docs
-    const { isAuthenticated, login } = useContext(AuthContext)
+    const { isAuthenticated, logout} = useContext(AuthContext)
     // existing login function from AuthContext and passing it through the hook.
     
       return {
         isAuthenticated,
-        login,
+        logout,
       }
 }

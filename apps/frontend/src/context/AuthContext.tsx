@@ -1,5 +1,13 @@
+/* AuthContext should mainly answer:
+is the user authenticated?
+who is the user?
+how do I log out?
+*/
+
+
 import { useState, useEffect, createContext } from 'react';
 import type { ReactNode } from "react";
+import { supabase } from "@/lib/supabase";
 
 type AuthProviderProps = {
   children: ReactNode;
@@ -8,7 +16,6 @@ type AuthProviderProps = {
 // Shape of the auth data
 type AuthContextType = {
   isAuthenticated: boolean;
-  login: (token: string) => void;
   logout: () => void;
 };
 
@@ -16,39 +23,48 @@ type AuthContextType = {
 // These are just fallback balues so React knows the shape of the context
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
-  login: () => { },
   logout: () => { },
 });
 
-const TOKEN_KEY = "token";
 
 // Not in react docs, but we need to wrap the AuthContext to manage auth states (FOCUS ON THIS)
 export default function AuthProvider({ children }: AuthProviderProps) {
-  // States here
+  // Adds an isAuthenticated state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
-    // Gets the token from localstorage
-    const token = localStorage.getItem(TOKEN_KEY)
+    // An async function that awaits the result of getSession(). If session exists and there is no error, user is authenticated
+    async function loadSession() {
+      const { data, error } = await supabase.auth.getSession()
+      setIsAuthenticated(Boolean(data.session) && !error)
+    }
 
-    // If the token exists, setIsAuthenticated will be true
-    setIsAuthenticated(Boolean(token))
+    // Call the async function
+    loadSession()
+
+    /* onAuthStateChange documentation
+    https://supabase.com/docs/reference/javascript/auth-signup#:~:text=Response-,Listen%20to%20auth%20events,-onAuthStateChange(callback)
+    */
+    // Create the listener variable deconstructed from onAuthStateChange. If session exists, user is authenticated
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      setIsAuthenticated(Boolean(session))
+    })
+
+    // In useEffect, we can return a function. Unsubscribes from auth listener when component unmounts / before effect reruns. 
+    return () => {
+      listener.subscription.unsubscribe()
+    }
   }, [])
 
 
-  function login(token : string) {
-    localStorage.setItem(TOKEN_KEY, token);
-    setIsAuthenticated(true);
-  }
 
-  function logout() {
-    localStorage.removeItem(TOKEN_KEY);
-    setIsAuthenticated(false);
+  async function logout() {
+    await supabase.auth.signOut()
   }
 
   return (
     // All components inside this provider can access these values
-    <AuthContext.Provider value={{ isAuthenticated, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, logout }}>
       {/* children is just whatever components are wrapped inside the provider. */}
       {children}
     </AuthContext.Provider>
