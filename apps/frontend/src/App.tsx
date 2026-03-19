@@ -38,7 +38,9 @@ function ProtectedPage() {
   // 1. check auth status
   // 2. redirect to login if not logged in
 
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) return null
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
 

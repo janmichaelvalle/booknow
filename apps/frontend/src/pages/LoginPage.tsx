@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import useAuth from "@/context/useAuth";
 import { LoginForm } from "@/components/login/LoginForm";
 import { supabase } from "@/lib/supabase";
 

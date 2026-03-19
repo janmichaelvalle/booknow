@@ -16,6 +16,7 @@ type AuthProviderProps = {
 // Shape of the auth data
 type AuthContextType = {
   isAuthenticated: boolean;
+  isLoading: boolean;
   logout: () => void;
 };
 
@@ -23,6 +24,7 @@ type AuthContextType = {
 // These are just fallback balues so React knows the shape of the context
 export const AuthContext = createContext<AuthContextType>({
   isAuthenticated: false,
+  isLoading: false,
   logout: () => { },
 });
 
@@ -31,12 +33,24 @@ export const AuthContext = createContext<AuthContextType>({
 export default function AuthProvider({ children }: AuthProviderProps) {
   // Adds an isAuthenticated state
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+  console.log("isAuthenticated changed:", isAuthenticated)
+}, [isAuthenticated])
+
+
+  useEffect(() => {
+    
+
+    setIsLoading(true)
     // An async function that awaits the result of getSession(). If session exists and there is no error, user is authenticated
+
+    
     async function loadSession() {
       const { data, error } = await supabase.auth.getSession()
       setIsAuthenticated(Boolean(data.session) && !error)
+      setIsLoading(false)
     }
 
     // Call the async function
@@ -48,23 +62,27 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     // Create the listener variable deconstructed from onAuthStateChange. If session exists, user is authenticated
     const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
       setIsAuthenticated(Boolean(session))
+      setIsLoading(false)
     })
+
 
     // In useEffect, we can return a function. Unsubscribes from auth listener when component unmounts / before effect reruns. 
     return () => {
       listener.subscription.unsubscribe()
     }
+    
+    
   }, [])
-
 
 
   async function logout() {
     await supabase.auth.signOut()
+    setIsAuthenticated(false)
   }
 
   return (
     // All components inside this provider can access these values
-    <AuthContext.Provider value={{ isAuthenticated, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, logout, isLoading }}>
       {/* children is just whatever components are wrapped inside the provider. */}
       {children}
     </AuthContext.Provider>

@@ -8,10 +8,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
 import { Link } from "react-router-dom"
 
 import { type Reservation } from "@/lib/types"
 import { useQuery } from "@tanstack/react-query"
+import useAuth from "@/context/useAuth"
+import { useNavigate } from "react-router-dom"
 
 
 
@@ -32,20 +35,34 @@ export function ReservationsListPage() {
   //   loadReservations()
   // }, [])
 
+  const navigate = useNavigate();
   async function fetchReservations(): Promise<Reservation[]> {
+
     const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/reservations`)
     const data = await res.json()
 
     return data?.data
   }
 
-  const { data: reservations, isPending} = useQuery({
+  const { data: reservations, isPending } = useQuery({
     queryKey: ['reservations'],
     queryFn: fetchReservations,
     initialData: []
   });
 
   if (isPending) return 'Loading...'
+
+  const { logout } = useAuth()
+
+  // Handler functions are used when we want to do multiple things for one user event.
+  async function handleLogout() {
+    console.log("Pressed logout")
+    await logout()
+    navigate("/login")
+
+  }
+
+
 
   return (
     <>
@@ -63,9 +80,11 @@ export function ReservationsListPage() {
         <TableBody>
           {reservations.map((reservation) => (
             <TableRow key={reservation.id}>
-              <Link to={`/reservation/${reservation.id}`}>
-              <TableCell>{reservation.id}</TableCell>
-              </Link>
+              <TableCell>
+                <Link to={`/reservation/${reservation.id}`}>
+                  {reservation.id}
+                </Link>
+              </TableCell>
               <TableCell>{reservation.eventDate}</TableCell>
               <TableCell>{reservation.guestCount}</TableCell>
               <TableCell>{reservation.selectedPackage}</TableCell>
@@ -73,6 +92,10 @@ export function ReservationsListPage() {
           ))}
         </TableBody>
       </Table>
+      <Button type="button" onClick={
+        handleLogout
+
+      }>Logout</Button>
     </>
   )
 
