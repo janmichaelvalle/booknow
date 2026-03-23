@@ -60,7 +60,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     https://supabase.com/docs/reference/javascript/auth-signup#:~:text=Response-,Listen%20to%20auth%20events,-onAuthStateChange(callback)
     */
     // Create the listener variable deconstructed from onAuthStateChange. If session exists, user is authenticated
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange((session) => {
       setIsAuthenticated(Boolean(session))
       setIsLoading(false)
     })

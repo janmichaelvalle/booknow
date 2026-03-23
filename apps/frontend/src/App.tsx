@@ -3,7 +3,9 @@ import { QuotationPage } from "./pages/QuotationPage"
 import { ReservationPage } from "./pages/ReservationPage"
 import { ReservationsListPage } from "./pages/ReservationsListPage" 
 import { LoginPage } from "./pages/LoginPage";
-import useAuth from './context/useAuth'
+import useAuth from './context/useAuth' 
+import { EditQuotationPage } from "./pages/EditQuotationPage"
+
 
 
 function App() {
@@ -26,6 +28,7 @@ function App() {
     <Routes>
       <Route path="/" element={<QuotationPage />}/>
       <Route path="/reservation/:reservationNo" element={<ReservationPage />} />
+      <Route path="/reservation/:reservationNo/edit" element={<EditQuotationPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedPage />}>
         <Route path="/reservations" element={<ReservationsListPage />} />

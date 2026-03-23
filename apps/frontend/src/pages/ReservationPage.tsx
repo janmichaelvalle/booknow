@@ -91,12 +91,8 @@ export function ReservationPage() {
         return <p>Reservation not found.</p>;
     }
 
-    /*
-    reservationData is just a TypeScript safety alias after null-check.
-    It is not new data.
-    It tells TS: “from here onward, this is definitely not null
-    */
-    const reservationData = reservation;
+
+
 
 
 
@@ -117,16 +113,16 @@ export function ReservationPage() {
                 vintagePackagePrice={vintagePackagePrice}
             />
 
-            <h1>Event Date: {new Date(reservationData.eventDate).toLocaleDateString()}</h1>
-            <h1>Number of guests: {reservationData.guestCount}</h1>
-            <h1>Package: {reservationData.selectedPackage}</h1>
-            Total Price:{" "}{reservationData.selectedPackage === "classic" ? classicPackagePrice : vintagePackagePrice}
+            <h1>Event Date: {new Date(reservation.eventDate).toLocaleDateString()}</h1>
+            <h1>Number of guests: {reservation.guestCount}</h1>
+            <h1>Package: {reservation.selectedPackage}</h1>
+            Total Price:{" "}{reservation.selectedPackage === "classic" ? classicPackagePrice : vintagePackagePrice}
             <Button type="button" onClick={() =>
-                navigate("/", {
+                navigate(`/reservation/${reservationNo}/edit`, {
                     state: {
-                        eventDate: reservationData.eventDate,
-                        guestCount: reservationData.guestCount,
-                        selectedPackage: reservationData.selectedPackage,
+                        eventDate: reservation.eventDate,
+                        guestCount: reservation.guestCount,
+                        selectedPackage: reservation.selectedPackage,
                     }
                 })}>
                 Edit quotation

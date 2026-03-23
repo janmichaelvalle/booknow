@@ -25,7 +25,7 @@ export function QuotationPage() {
 
   const incoming = location.state as QuotationValues | undefined   // This is the values coming from reservation page when user wants to edit
 
-   const form = useForm<z.infer<typeof quotationSchema>>({
+  const form = useForm<z.infer<typeof quotationSchema>>({
     resolver: zodResolver(quotationSchema),
     defaultValues: {
       eventDate: undefined,
@@ -34,29 +34,29 @@ export function QuotationPage() {
     },
   })
 
-  
+
   useEffect(() => {
-  if (incoming) {
-    form.reset({
-      eventDate: new Date(incoming.eventDate),
-      guestCount: incoming.guestCount,
-      selectedPackage: incoming.selectedPackage,
-    })
-  }
-}, [incoming, form])
+    if (incoming) {
+      form.reset({
+        eventDate: new Date(incoming.eventDate),
+        guestCount: incoming.guestCount,
+        selectedPackage: incoming.selectedPackage,
+      })
+    }
+  }, [incoming, form])
 
 
 
-    const classicPackagePrice = form.watch("guestCount") * 50
-    const vintagePackagePrice = form.watch("guestCount") * 100
+  const classicPackagePrice = form.watch("guestCount") * 50
+  const vintagePackagePrice = form.watch("guestCount") * 100
 
   async function onSubmit(data: z.infer<typeof quotationSchema>) {
-    
+
     // const selectedPackagePrice =
     // data.selectedPackage === "classic"
     //   ? classicPackagePrice
     //   : vintagePackagePrice
-    
+
     const payload = {
       eventDate: data.eventDate.toISOString(),
       guestCount: data.guestCount,
@@ -70,21 +70,21 @@ export function QuotationPage() {
     })
 
     if (!res.ok) {
-    console.error("Failed to create reservation")
-    return
-  }
+      console.error("Failed to create reservation")
+      return
+    }
 
-  const json = await res.json()
-  const reservationId = json?.data?.id
+    const json = await res.json()
+    const reservationId = json?.data?.id
 
-  if (!reservationId) {
-  console.error("Reservation ID missing in response")
-  return
-}
+    if (!reservationId) {
+      console.error("Reservation ID missing in response")
+      return
+    }
 
     navigate(`/reservation/${reservationId}`)
   }
-  
+
 
   return (
     <>

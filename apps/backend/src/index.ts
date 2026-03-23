@@ -62,7 +62,7 @@ app.post('/api/login', async (c) => {
   //   .maybeSingle()
 
   // .rpc calls the database function
-   const { data: row, error } = await supabase.rpc('verify_login', {
+  const { data: row, error } = await supabase.rpc('verify_login', {
     user_email: email,
     user_password: password,
   })
@@ -173,5 +173,46 @@ app.post('/api/reservations', async (c) => {
     201
   )
 })
+
+app.put('/api/reservations/:reservationNo', async (c) => {
+  const reservationNo = c.req.param('reservationNo')
+  const body = await c.req.json()
+
+  const payload = {
+    event_date: String(body.eventDate),
+    guest_count: Number(body.guestCount),
+    selected_package: body.selectedPackage as SelectedPackage,
+  }
+
+  const { data: rows, error } = await supabase
+    .from('reservations')
+    .update(payload)
+    .eq('id', reservationNo)
+    .select('id,event_date,guest_count,selected_package')
+
+  if (error) {
+    return c.json({ message: 'Failed to update reservation', error: error.message }, 500)
+  }
+
+  if (!rows?.length) {
+    return c.json({ message: 'Reservation not found' }, 404)
+  }
+
+  const updated = rows[0] as ReservationRow
+  const updatedReservation: Reservation = {
+    id: updated.id,
+    eventDate: updated.event_date,
+    guestCount: updated.guest_count,
+    selectedPackage: updated.selected_package,
+  }
+
+  return c.json({
+    message: 'Reservation updated successfully',
+    data: updatedReservation,
+  })
+})
+
+
+
 
 export default app
