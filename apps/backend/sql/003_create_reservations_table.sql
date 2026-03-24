@@ -5,6 +5,7 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.reservations (
   id uuid primary key default gen_random_uuid(),
+  business_id uuid not null references public.businesses(id),
   event_date timestamptz not null,
   guest_count integer not null check (guest_count > 0),
   selected_package text not null check (selected_package in ('classic', 'vintage')),
@@ -30,3 +31,7 @@ execute function public.set_updated_at();
 
 create index if not exists reservations_event_date_idx
   on public.reservations (event_date);
+
+create index if not exists reservations_business_id_idx
+  on public.reservations (business_id);
+
