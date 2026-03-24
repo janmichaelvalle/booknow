@@ -174,36 +174,52 @@ app.post('/api/reservations', async (c) => {
   )
 })
 
+// Edit quotation
 app.put('/api/reservations/:reservationNo', async (c) => {
-  const reservationNo = c.req.param('reservationNo')
-  const body = await c.req.json()
 
+  // Read the reservationNo param in the url
+  const reservationNo = c.req.param('reservationNo')
+  // Read the incoming json
+  const body = await c.req.json()
+  
+  // Create payload from body
   const payload = {
     event_date: String(body.eventDate),
     guest_count: Number(body.guestCount),
     selected_package: body.selectedPackage as SelectedPackage,
   }
 
+    // rows contains the updated row data & error contains the error if the query fails
   const { data: rows, error } = await supabase
+    // Use the reservations table for the query
     .from('reservations')
+    // Update the row with the new values from payload
     .update(payload)
+    // Update the row whose id matches reservationNo
     .eq('id', reservationNo)
+    // Return these columns from the updated row
     .select('id,event_date,guest_count,selected_package')
+    // This will return the new updated data and error is any
 
   if (error) {
     return c.json({ message: 'Failed to update reservation', error: error.message }, 500)
   }
 
+  // If there are no returned rows, treat it as not found.
   if (!rows?.length) {
     return c.json({ message: 'Reservation not found' }, 404)
   }
 
-  const updated = rows[0] as ReservationRow
+  /* After the update, Supabase returns an array of rows. Since it is just one reservation, it will just have one row
+  */
+  const updatedData = rows[0] as ReservationRow
+  
+  // Creates a new object in a frontend friendly 
   const updatedReservation: Reservation = {
-    id: updated.id,
-    eventDate: updated.event_date,
-    guestCount: updated.guest_count,
-    selectedPackage: updated.selected_package,
+    id: updatedData.id,
+    eventDate: updatedData.event_date,
+    guestCount: updatedData.guest_count,
+    selectedPackage: updatedData.selected_package,
   }
 
   return c.json({
