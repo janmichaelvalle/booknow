@@ -26,12 +26,12 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<QuotationPage />}/>
-      <Route path="/reservation/:reservationNo" element={<ReservationPage />} />
-      <Route path="/reservation/:reservationNo/edit" element={<EditQuotationPage />} />
+      <Route path="/:businessSlug" element={<QuotationPage />}/>
+      <Route path="/:businessSlug/reservation/:reservationNo" element={<ReservationPage />} />
+      <Route path="/:businessSlug/reservation/:reservationNo/edit" element={<EditQuotationPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedPage />}>
-        <Route path="/reservations" element={<ReservationsListPage />} />
+        <Route path="/:businessSlug/reservations" element={<ReservationsListPage />} />
       </Route>
     </Routes>
   )

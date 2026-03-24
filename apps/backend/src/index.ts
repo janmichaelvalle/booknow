@@ -20,6 +20,21 @@ app.use('*', cors({ origin: process.env.CORS_ORIGIN }))
 
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
+// Helper function to get business_slug
+async function getBusinessBySlug(slug: string) {
+  const { data, error } = await supabase
+    .from('businesses')
+    .select('id,name,slug')
+    .eq('slug', slug)
+    .maybeSingle()
+
+  return {
+    business: data as BusinessRow | null,
+    error,
+  }
+}
+
+
 type SelectedPackage = 'classic' | 'vintage'
 
 type Reservation = {
@@ -35,6 +50,13 @@ type ReservationRow = {
   guest_count: number
   selected_package: SelectedPackage
 }
+
+type BusinessRow = {
+  id: string
+  name: string
+  slug: string
+}
+
 
 // High-level flow
 
@@ -138,8 +160,13 @@ app.get('/api/reservations/:reservationNo', async (c) => {
 // Create a reservation
 app.post('/api/reservations', async (c) => {
   const body = await c.req.json()
+  const businessSlug = String(body.businessSlug ?? '')
+
+  // 3/24/2026 - EDITING THIS CODE
+  const { business, error: businessError } = await getBusinessBySlug(businessSlug)
 
   const payload = {
+     business_id: business.id,
     event_date: String(body.eventDate),
     guest_count: Number(body.guestCount),
     selected_package: body.selectedPackage as SelectedPackage,
