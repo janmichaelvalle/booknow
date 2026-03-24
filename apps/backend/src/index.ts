@@ -58,58 +58,32 @@ type BusinessRow = {
 }
 
 
-// High-level flow
-
-// 1. Client sends a request to /api/login including the credentails (user & pass)
-// 2. /api/login validates the credentials:
-//  - if valid, respond back with token
-//  - if invalid, respond with error (401)
-// 3. Client saves the token
-// 4. Private api routes are now guarded:
-//  - Client must always pass a VALID token, if invalid, respond back with (401)
-
-app.post('/api/login', async (c) => {
-  const body = await c.req.json() // take the incoming request, read as json, and store it in body
-  const email = body.email
-  const password = body.password
-
-  if (!email || !password) {
-    return c.json({ message: 'Email and password are required' }, 400)
-  }
-
-  // const { data: row, error } = await supabase
-  //   .from('users')
-  //   .select('id,email,password_hash')
-  //   .eq('email', email)
-  //   .maybeSingle()
-
-  // .rpc calls the database function
-  const { data: row, error } = await supabase.rpc('verify_login', {
-    user_email: email,
-    user_password: password,
-  })
-
-  if (error) {
-    return c.json({ message: 'Login failed', error: error.message }, 500)
-  }
-
-  if (!row || row.length === 0) {
-    return c.json({ message: 'Invalid credentials' }, 401)
-  }
 
 
-  return c.json({
-    message: 'Login request received',
-    token: 'some-token',
-    user: row[0],
-  })
-})
+
 
 // GET all reservations
-app.get('/api/reservations', async (c) => {
+app.get(`/api/businesses/:businessSlug/reservations`, async (c) => {
+  
+  // Read the businessSlug in the URL
+  const businessSlug = c.req.param('businessSlug')
+
+  // Call getBusinessBySlug helper function
+  const { business, error: businessError } = await getBusinessBySlug(businessSlug)
+
+  if (businessError) {
+    return c.json({ message: 'Failed to fetch business', error: businessError.message }, 500)
+  }
+
+  if (!business) {
+    return c.json({ message: 'Business not found' }, 404)
+  }
+
+
   const { data: rows, error } = await supabase
     .from('reservations')
     .select('id,event_date,guest_count,selected_package')
+    .eq('business_id', business.id)
     .order('created_at', { ascending: false })
 
   if (error) {
@@ -130,12 +104,28 @@ app.get('/api/reservations', async (c) => {
 })
 
 // Get reservation 
-app.get('/api/reservations/:reservationNo', async (c) => {
-  const reservationNo = c.req.param('reservationNo')
+app.get('/api/businesses/:businessSlug/reservation/:reservationId', async (c) => {
+  const reservationId = c.req.param('reservationId')
+   // Read the businessSlug in the URL
+  const businessSlug = c.req.param('businessSlug')
+
+  // Call getBusinessBySlug helper function
+  const { business, error: businessError } = await getBusinessBySlug(businessSlug)
+
+  if (businessError) {
+    return c.json({ message: 'Failed to fetch business', error: businessError.message }, 500)
+  }
+
+  if (!business) {
+    return c.json({ message: 'Business not found' }, 404)
+  }
+
+
   const { data: row, error } = await supabase
     .from('reservations')
     .select('id,event_date,guest_count,selected_package')
-    .eq('id', reservationNo)
+    .eq('id', reservationId)
+    .eq('business_id', business.id)
     .maybeSingle()
 
   if (error) {
@@ -160,13 +150,24 @@ app.get('/api/reservations/:reservationNo', async (c) => {
 // Create a reservation
 app.post('/api/reservations', async (c) => {
   const body = await c.req.json()
+
+  // What is ?? '' mean?
   const businessSlug = String(body.businessSlug ?? '')
 
-  // 3/24/2026 - EDITING THIS CODE
+
   const { business, error: businessError } = await getBusinessBySlug(businessSlug)
 
+    if (!business) {
+    return c.json({ message: 'Business not found' }, 400)
+  }
+
+  if (businessError) {
+    return c.json({ message: 'Failed to fetch business', error: businessError.message }, 500)
+  }
+
+
   const payload = {
-     business_id: business.id,
+    business_id: business.id,
     event_date: String(body.eventDate),
     guest_count: Number(body.guestCount),
     selected_package: body.selectedPackage as SelectedPackage,
@@ -202,31 +203,46 @@ app.post('/api/reservations', async (c) => {
 })
 
 // Edit quotation
-app.put('/api/reservations/:reservationNo', async (c) => {
+app.put('/api/businesses/:businessSlug/reservation/:reservationId', async (c) => {
 
-  // Read the reservationNo param in the url
-  const reservationNo = c.req.param('reservationNo')
+  // Read the reservationId param in the url
+  const reservationId = c.req.param('reservationId')
   // Read the incoming json
   const body = await c.req.json()
-  
+
+  const businessSlug = c.req.param('businessSlug')
+
+  const { business, error: businessError } = await getBusinessBySlug(businessSlug)
+
+  if (businessError) {
+    return c.json({ message: 'Failed to fetch business', error: businessError.message }, 500)
+  }
+
+  if (!business) {
+    return c.json({ message: 'Business not found' }, 404)
+  }
+
   // Create payload from body
   const payload = {
+    business_id: business.id,
     event_date: String(body.eventDate),
     guest_count: Number(body.guestCount),
     selected_package: body.selectedPackage as SelectedPackage,
   }
 
-    // rows contains the updated row data & error contains the error if the query fails
+  // rows contains the updated row data & error contains the error if the query fails
   const { data: rows, error } = await supabase
     // Use the reservations table for the query
     .from('reservations')
     // Update the row with the new values from payload
     .update(payload)
-    // Update the row whose id matches reservationNo
-    .eq('id', reservationNo)
+    // Update the row whose id matches reservationId
+    .eq('id', reservationId)
+    // Upddate the row whose business_id matches
+    .eq('business_id', business.id)
     // Return these columns from the updated row
     .select('id,event_date,guest_count,selected_package')
-    // This will return the new updated data and error is any
+  // This will return the new updated data and error is any
 
   if (error) {
     return c.json({ message: 'Failed to update reservation', error: error.message }, 500)
@@ -240,7 +256,7 @@ app.put('/api/reservations/:reservationNo', async (c) => {
   /* After the update, Supabase returns an array of rows. Since it is just one reservation, it will just have one row
   */
   const updatedData = rows[0] as ReservationRow
-  
+
   // Creates a new object in a frontend friendly 
   const updatedReservation: Reservation = {
     id: updatedData.id,

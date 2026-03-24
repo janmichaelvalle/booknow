@@ -22,7 +22,9 @@ type ReservationFormValues = Pick<
 
 export function ReservationPage() {
     const navigate = useNavigate()
-    const { reservationNo } = useParams()
+    const { reservationId, businessSlug } = useParams()
+
+
     const [reservation, setReservation] = useState<Reservation | null>(null)
     const [isFetching, setIsFetching] = useState<boolean>(false)
 
@@ -43,13 +45,15 @@ export function ReservationPage() {
 
 
     useEffect(() => {
-        if (!reservationNo) return
+
+        if (!businessSlug || !reservationId) return
 
         async function loadReservation() {
             setIsFetching(true)
 
             const res = await fetch(
-                `${import.meta.env.VITE_BASE_URL}/api/reservations/${reservationNo}`
+                `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}`
+
             )
             if (!res.ok) {
                 setIsFetching(false);
@@ -67,23 +71,27 @@ export function ReservationPage() {
             const json = await res.json()
             const data = json.data as Reservation
             form.reset({
-            eventDate: new Date(data.eventDate), // string -> Date
-            guestCount: data.guestCount,
-            selectedPackage: data.selectedPackage,
-        })
+                eventDate: new Date(data.eventDate), // string -> Date
+                guestCount: data.guestCount,
+                selectedPackage: data.selectedPackage,
+            })
 
             setIsFetching(false)
             setReservation(data)
         }
 
         loadReservation()
-        
-    }, [reservationNo, form])
+
+    }, [reservationId, businessSlug, form])
 
     // Always prepare for errors
     // if (error) {
     //     return <></>
     // }
+
+    if (!businessSlug || !reservationId) {
+        return <p>Missing route parameters.</p>
+    }
 
     // Show loading while reservation is still fetching
     if (!reservation) {
@@ -102,7 +110,7 @@ export function ReservationPage() {
 
     return (
         <>
-            <Link to="/reservations">Back</Link>
+            <Link to={`/${businessSlug}/reservations`}>Back</Link>
             <h1>This is the reservation page</h1>
             <EventDetails
                 control={form.control}
@@ -118,7 +126,7 @@ export function ReservationPage() {
             <h1>Package: {reservation.selectedPackage}</h1>
             Total Price:{" "}{reservation.selectedPackage === "classic" ? classicPackagePrice : vintagePackagePrice}
             <Button type="button" onClick={() =>
-                navigate(`/reservation/${reservationNo}/edit`, {
+                navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
                     state: {
                         eventDate: reservation.eventDate,
                         guestCount: reservation.guestCount,

@@ -9,12 +9,11 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Link } from "react-router-dom"
 
 import { type Reservation } from "@/lib/types"
 import { useQuery } from "@tanstack/react-query"
 import useAuth from "@/context/useAuth"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams, Link } from "react-router-dom"
 
 
 
@@ -36,16 +35,18 @@ export function ReservationsListPage() {
   // }, [])
 
   const navigate = useNavigate();
+  const { businessSlug } = useParams()
+
   async function fetchReservations(): Promise<Reservation[]> {
 
-    const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/reservations`)
+    const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservations`)
     const data = await res.json()
 
     return data?.data
   }
 
   const { data: reservations, isPending } = useQuery({
-    queryKey: ['reservations'],
+    queryKey: ['reservations', businessSlug],
     queryFn: fetchReservations,
     initialData: []
   });
@@ -61,6 +62,11 @@ export function ReservationsListPage() {
     navigate("/login")
 
   }
+
+  if (!businessSlug) {
+    return <p>Missing business slug.</p>
+  }
+
 
 
 
@@ -81,7 +87,7 @@ export function ReservationsListPage() {
           {reservations.map((reservation) => (
             <TableRow key={reservation.id}>
               <TableCell>
-                <Link to={`/reservation/${reservation.id}`}>
+                <Link to={`/${businessSlug}/reservation/${reservation.id}`}>
                   {reservation.id}
                 </Link>
               </TableCell>

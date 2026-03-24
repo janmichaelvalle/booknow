@@ -24,7 +24,7 @@ export function EditQuotationPage() {
    const navigate = useNavigate()
 
   // Gets the reservationNo in the URL parameter
-  const { reservationNo } = useParams()
+  const { reservationId, businessSlug } = useParams()
   const [reservation, setReservation] = useState<Reservation | null>(null)
   const [isFetching, setIsFetching] = useState<boolean>(false)
 
@@ -40,13 +40,14 @@ export function EditQuotationPage() {
 
   useEffect(() => {
     // If there is no reservationNo from the URL, stop immediately.
-    if (!reservationNo) return
+    if (!businessSlug || !reservationId) return
+
 
     async function loadReservation() {
       setIsFetching(true)
 
       // // Fetch the reservation that matches the reservationNo from the URL.
-      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/reservations/${reservationNo}`)
+      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}`)
 
       // converts the response into JavaScript data
       const json = await res.json()
@@ -70,8 +71,12 @@ export function EditQuotationPage() {
     loadReservation()
 
     // reservationNo, form is a dependency array which tells react to run this effect again when these two change.
-  }, [reservationNo, form])
+  }, [reservationId, businessSlug, form])
 
+
+  if (!businessSlug || !reservationId) {
+  return <p>Missing route parameters.</p>
+}
 
 
   // Show loading while reservation is still fetching
@@ -90,7 +95,8 @@ export function EditQuotationPage() {
   
   
   // if reservationNo is missing, stop the function immediately
-  if (!reservationNo) return
+  if (!businessSlug || !reservationId) return
+
 
   // Takes the values in the form and converts data to what the API requires to submitted.
   const payload = {
@@ -102,7 +108,7 @@ export function EditQuotationPage() {
   
   // Send the updated reservation data to the backend API.
   const res = await fetch(
-    `${import.meta.env.VITE_BASE_URL}/api/reservations/${reservationNo}`,
+    `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}`,
     {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -115,7 +121,7 @@ export function EditQuotationPage() {
     return
   }
 
-  navigate(`/reservation/${reservationNo}`)
+  navigate(`/${businessSlug}/reservation/${reservationId}`)
 }
 
 
@@ -123,8 +129,7 @@ export function EditQuotationPage() {
   return (
     <>
       <h1>This is the edit quotation</h1>
-      <Link to="/reservations/${resevationNo}">Back</Link>
-
+      <Link to={`/${businessSlug}/reservation/${reservationId}`}>Back</Link>
       <form onSubmit={form.handleSubmit(onSubmit)}>
       <EventDetails
         control={form.control}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import * as z from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import { useNavigate, useLocation } from "react-router-dom"
+import { useNavigate, useLocation, useParams } from "react-router-dom"
 import { useEffect } from "react";
 import { type QuotationValues } from "@/lib/types"
 
@@ -22,6 +22,7 @@ export function QuotationPage() {
 
   const navigate = useNavigate()
   const location = useLocation()
+  const { businessSlug } = useParams()
 
   const incoming = location.state as QuotationValues | undefined   // This is the values coming from reservation page when user wants to edit
 
@@ -57,7 +58,13 @@ export function QuotationPage() {
     //   ? classicPackagePrice
     //   : vintagePackagePrice
 
+    if (!businessSlug) {
+  console.error("Business slug is missing from the URL")
+  return
+}
+
     const payload = {
+      businessSlug,
       eventDate: data.eventDate.toISOString(),
       guestCount: data.guestCount,
       selectedPackage: data.selectedPackage,
@@ -82,7 +89,8 @@ export function QuotationPage() {
       return
     }
 
-    navigate(`/reservation/${reservationId}`)
+    navigate(`/${businessSlug}/reservation/${reservationId}`)
+    
   }
 
 

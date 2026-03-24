@@ -27,8 +27,8 @@ function App() {
   return (
     <Routes>
       <Route path="/:businessSlug" element={<QuotationPage />}/>
-      <Route path="/:businessSlug/reservation/:reservationNo" element={<ReservationPage />} />
-      <Route path="/:businessSlug/reservation/:reservationNo/edit" element={<EditQuotationPage />} />
+      <Route path="/:businessSlug/reservation/:reservationId" element={<ReservationPage />} />
+      <Route path="/:businessSlug/reservation/:reservationId/edit" element={<EditQuotationPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedPage />}>
         <Route path="/:businessSlug/reservations" element={<ReservationsListPage />} />
