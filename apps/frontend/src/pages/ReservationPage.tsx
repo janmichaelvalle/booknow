@@ -100,10 +100,6 @@ export function ReservationPage() {
     }
 
 
-
-
-
-
     const guestCount = form.watch("guestCount") ?? 0
     const classicPackagePrice = guestCount * 50
     const vintagePackagePrice = guestCount * 100
