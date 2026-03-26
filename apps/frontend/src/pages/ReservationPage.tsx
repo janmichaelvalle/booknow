@@ -1,12 +1,13 @@
 import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
-import { type Reservation } from "@/lib/types"
 import { useEffect, useState } from "react"
 import { EventDetails } from "@/components/quotation/EventDetails"
 import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { useForm } from "react-hook-form"
-import { type QuotationValues } from "@/lib/types"
+import { type QuotationValues, type Reservation } from "@/lib/types"
 import { Link } from "react-router-dom"
+import {EventDetailsCard}  from "@/components/reservation/EventDetailsCard"
+
 
 
 /* Pick is a TypeScript utility type that creates a smaller type from an existing one.
@@ -19,6 +20,7 @@ type ReservationFormValues = Pick<
     QuotationValues,
     "eventDate" | "guestCount" | "selectedPackage"
 >
+
 
 export function ReservationPage() {
     const navigate = useNavigate()
@@ -108,19 +110,6 @@ export function ReservationPage() {
         <>
             <Link to={`/${businessSlug}/reservations`}>Back</Link>
             <h1>This is the reservation page</h1>
-            <EventDetails
-                control={form.control}
-            />
-            <PackageDetails
-                control={form.control}
-                classicPackagePrice={classicPackagePrice}
-                vintagePackagePrice={vintagePackagePrice}
-            />
-
-            <h1>Event Date: {new Date(reservation.eventDate).toLocaleDateString()}</h1>
-            <h1>Number of guests: {reservation.guestCount}</h1>
-            <h1>Package: {reservation.selectedPackage}</h1>
-            Total Price:{" "}{reservation.selectedPackage === "classic" ? classicPackagePrice : vintagePackagePrice}
             <Button type="button" onClick={() =>
                 navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
                     state: {
@@ -131,6 +120,21 @@ export function ReservationPage() {
                 })}>
                 Edit quotation
             </Button>
+            <EventDetailsCard 
+            reservation={reservation}
+            />
+          
+            <PackageDetails
+                control={form.control}
+                classicPackagePrice={classicPackagePrice}
+                vintagePackagePrice={vintagePackagePrice}
+            />
+
+            <h1>Event Date: {new Date(reservation.eventDate).toLocaleDateString()}</h1>
+            <h1>Number of guests: {reservation.guestCount}</h1>
+            <h1>Package: {reservation.selectedPackage}</h1>
+            Total Price:{" "}{reservation.selectedPackage === "classic" ? classicPackagePrice : vintagePackagePrice}
+            
         </>
     )
 
