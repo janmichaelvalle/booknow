@@ -1,7 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
-import { EventDetails } from "@/components/quotation/EventDetails"
+
 import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { useForm } from "react-hook-form"
 import { type QuotationValues, type Reservation } from "@/lib/types"

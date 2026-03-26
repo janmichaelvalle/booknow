@@ -58,10 +58,6 @@ type BusinessRow = {
 }
 
 
-
-
-
-
 // GET all reservations
 app.get(`/api/businesses/:businessSlug/reservations`, async (c) => {
   
@@ -270,8 +266,6 @@ app.put('/api/businesses/:businessSlug/reservation/:reservationId', async (c) =>
     data: updatedReservation,
   })
 })
-
-
 
 
 export default app
