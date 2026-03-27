@@ -3,6 +3,11 @@
     "apps/*",
     "packages/*"
   ],
+  "scripts": {
+    "dev:backend": "vercel dev",
+    "dev:frontend": "npm run dev --workspace apps/frontend",
+    "dev:all": "powershell -NoProfile -Command \"Start-Process powershell -ArgumentList '-NoProfile','-Command','Set-Location ''C:\\dev\\booknow''; npm run dev:backend'; npm run dev:frontend\""
+  },
   "packageManager": "npm@8.5.0",
   "devDependencies": {
     "turbo": "^2.8.9"

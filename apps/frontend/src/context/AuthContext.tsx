@@ -35,10 +35,6 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-  console.log("isAuthenticated changed:", isAuthenticated)
-}, [isAuthenticated])
-
 
   useEffect(() => {
     

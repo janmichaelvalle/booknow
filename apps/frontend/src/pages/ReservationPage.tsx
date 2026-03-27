@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form"
 import { type QuotationValues, type Reservation } from "@/lib/types"
 import { Link } from "react-router-dom"
 import {EventDetailsCard}  from "@/components/reservation/EventDetailsCard"
+import { PackageDetailsCard } from "@/components/reservation/PackageDetailsCard"
 
 
 
@@ -72,11 +73,7 @@ export function ReservationPage() {
 
             const json = await res.json()
             const data = json.data as Reservation
-            form.reset({
-                eventDate: new Date(data.eventDate), // string -> Date
-                guestCount: data.guestCount,
-                selectedPackage: data.selectedPackage,
-            })
+           
 
             setIsFetching(false)
             setReservation(data)
@@ -102,9 +99,7 @@ export function ReservationPage() {
     }
 
 
-    const guestCount = form.watch("guestCount") ?? 0
-    const classicPackagePrice = guestCount * 50
-    const vintagePackagePrice = guestCount * 100
+    const packagePrice = (reservation.selectedPackage === "classic" ? reservation.guestCount * 50: reservation.guestCount * 100)
 
     return (
         <>
@@ -123,17 +118,11 @@ export function ReservationPage() {
             <EventDetailsCard 
             reservation={reservation}
             />
+            <PackageDetailsCard
+                packagePrice={packagePrice}
+                selectedPackage={reservation.selectedPackage}/>
           
-            <PackageDetails
-                control={form.control}
-                classicPackagePrice={classicPackagePrice}
-                vintagePackagePrice={vintagePackagePrice}
-            />
-
-            <h1>Event Date: {new Date(reservation.eventDate).toLocaleDateString()}</h1>
-            <h1>Number of guests: {reservation.guestCount}</h1>
-            <h1>Package: {reservation.selectedPackage}</h1>
-            Total Price:{" "}{reservation.selectedPackage === "classic" ? classicPackagePrice : vintagePackagePrice}
+          
             
         </>
     )
