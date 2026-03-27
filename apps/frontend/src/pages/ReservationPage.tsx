@@ -1,8 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
-
-import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { useForm } from "react-hook-form"
 import { type QuotationValues, type Reservation } from "@/lib/types"
 import { Link } from "react-router-dom"
