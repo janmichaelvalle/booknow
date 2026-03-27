@@ -6,6 +6,7 @@ import { type QuotationValues, type Reservation } from "@/lib/types"
 import { Link } from "react-router-dom"
 import {EventDetailsCard}  from "@/components/reservation/EventDetailsCard"
 import { PackageDetailsCard } from "@/components/reservation/PackageDetailsCard"
+import { PaymentMethodSelector } from "@/components/reservation/PaymentMethodSelector"
 
 
 
@@ -119,9 +120,7 @@ export function ReservationPage() {
             <PackageDetailsCard
                 packagePrice={packagePrice}
                 selectedPackage={reservation.selectedPackage}/>
-          
-          
-            
+            <PaymentMethodSelector/>
         </>
     )
 

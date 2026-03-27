@@ -9,7 +9,6 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-
 import { type Reservation } from "@/lib/types"
 import { useQuery } from "@tanstack/react-query"
 import useAuth from "@/context/useAuth"
@@ -66,7 +65,6 @@ export function ReservationsListPage() {
   if (!businessSlug) {
     return <p>Missing business slug.</p>
   }
-
 
 
 
