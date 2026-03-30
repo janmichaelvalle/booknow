@@ -24,13 +24,10 @@ type SingleReservationServiceResult =
         }
     }
 
-
-type CreateReservationBody = Pick<
-  Reservation,
-  "eventDate" | "guestCount" | "selectedPackage"
+type ReservationFormBody = Pick<
+    Reservation,
+    "eventDate" | "guestCount" | "selectedPackage"
 >
-
-
 
 export async function getReservationsByBusinessSlug(businessSlug: string):
     // this async function returns a Promise, and when that Promise finishes, the final value will match ServiceResult
@@ -140,10 +137,61 @@ export async function getSingleReservationByBusinessSlug(businessSlug: string, r
 
 }
 
-export async function createReservation(businessSlug: string, body: CreateReservationBody): Promise<SingleReservationServiceResult> {
+export async function createReservation(businessSlug: string, body: ReservationFormBody): Promise<SingleReservationServiceResult> {
 
     const { business, error: businessError } = await getBusinessBySlug(businessSlug)
 
+    if (businessError) {
+        return {
+            error: {
+                message: 'Failed to fetch business',
+                details: businessError.message,
+                status: 500,
+            }
+        }
+    }
+    if (!business) {
+        return {
+            error: {
+                message: "Business not found",
+                status: 404,
+            }
+        }
+    }
+    const payload = {
+        business_id: business.id,
+        event_date: String(body.eventDate),
+        guest_count: Number(body.guestCount),
+        selected_package: body.selectedPackage,
+    }
+
+    const { data: rows, error } = await supabase
+        .from('reservations')
+        .insert(payload)
+        .select('id,event_date,guest_count,selected_package')
+
+    if (error || !rows?.length) {
+        return {
+            error: {
+                message: 'Failed to create reservation',
+                details: error?.message ?? 'No row returned',
+                status: 500,
+            }
+        }
+    }
+    const inserted = rows[0] as ReservationDbRow
+    const newReservation: Reservation = {
+        id: inserted.id,
+        eventDate: inserted.event_date,
+        guestCount: inserted.guest_count,
+        selectedPackage: inserted.selected_package,
+    }
+    return { data: newReservation }
+
+}
+
+export async function updateReservation(businessSlug: string, body: ReservationFormBody, reservationId: Reservation['id']): Promise<SingleReservationServiceResult> {
+    const { business, error: businessError } = await getBusinessBySlug(businessSlug)
     if (businessError) {
         return {
             error: {
@@ -169,29 +217,37 @@ export async function createReservation(businessSlug: string, body: CreateReserv
         selected_package: body.selectedPackage,
     }
 
+
     const { data: rows, error } = await supabase
         .from('reservations')
-        .insert(payload)
+        .update(payload)
+        .eq('id', reservationId)
+        .eq('business_id', business.id)
         .select('id,event_date,guest_count,selected_package')
+
 
     if (error || !rows?.length) {
         return {
             error: {
-                message: 'Failed to create reservation',
+                message: 'Failed to update reservation',
                 details: error?.message ?? 'No row returned',
                 status: 500,
             }
-        } 
+        }
     }
 
-    const inserted = rows[0] as ReservationDbRow
-    const newReservation: Reservation = {
-        id: inserted.id,
-        eventDate: inserted.event_date,
-        guestCount: inserted.guest_count,
-        selectedPackage: inserted.selected_package,
+    // After the update, Supabase returns an array of rows. Since it is just one reservation, it will just have one row
+    const updatedData = rows[0] as ReservationDbRow
+
+    // Creates a new object in a frontend friendly 
+    const updatedReservation: Reservation = {
+        id: updatedData.id,
+        eventDate: updatedData.event_date,
+        guestCount: updatedData.guest_count,
+        selectedPackage: updatedData.selected_package,
     }
 
-   return { data : newReservation }
+    return { data: updatedReservation }
+
 
 }

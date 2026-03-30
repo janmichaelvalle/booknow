@@ -1,6 +1,6 @@
 // Import the Hono Context type for the controller's `c` parameter
 import type { Context } from "hono";
-import { createReservation, getReservationsByBusinessSlug } from "../services/reservation.service.js";
+import { createReservation, getReservationsByBusinessSlug, updateReservation } from "../services/reservation.service.js";
 import { getSingleReservationByBusinessSlug } from "../services/reservation.service.js";
 
 export async function getAllReservationsController(c: Context) {
@@ -27,9 +27,7 @@ export async function getAllReservationsController(c: Context) {
 }
 
 export async function getSingleReservationController(c: Context) {
-
   const businessSlug = c.req.param("businessSlug");
-
   const reservationId = c.req.param('reservationId');
 
   // Get the reservations
@@ -49,14 +47,11 @@ export async function getSingleReservationController(c: Context) {
     message: "success",
     data: result.data,
   });
-
-  
 }
 
 export async function createReservationController(c: Context) {
   const body = await c.req.json()
   const businessSlug = c.req.param("businessSlug")
-
   const result = await createReservation(businessSlug, body)
 
   if ("error" in result) {
@@ -74,6 +69,29 @@ export async function createReservationController(c: Context) {
     data: result.data,
   });
 
+}
 
+export async function updateReservationController(c: Context) {
+  const businessSlug = c.req.param('businessSlug')
+  const reservationId = c.req.param('reservationId')
+  const body = await c.req.json()
 
+  const result = await updateReservation(businessSlug, body, reservationId)
+
+  if ("error" in result) {
+    return c.json(
+      {
+        message: result.error.message,
+        error: result.error.details,
+      },
+      result.error.status
+    );
+  }
+
+  return c.json({
+    message: "success",
+    data: result.data,
+  });
+
+  
 }
