@@ -1,71 +1,65 @@
 import { Hono } from "hono";
-import { getReservationsByBusinessSlug } from "../services/reservation.service.js";
+import { getAllReservationsController, getSingleReservationController, createReservationController } from "../controllers/reservation.controller.js";
 
 
 const app = new Hono()
 
 // GET all reservations
-app.get(`/api/businesses/:businessSlug/reservations`, async (c) => {
-  // Read the businessSlug in the URL
-  const businessSlug = c.req.param('businessSlug')
-  const result = await getReservationsByBusinessSlug(businessSlug)
-  if ("error" in result) {
-    return c.json(
-      {
-        message: result.error.message,
-        error: result.error.details,
-      },
-      result.error.status
-    );
-  }
-  return c.json({
-    message: 'success',
-    data: result.data,
-  })
-})
+app.get("/api/businesses/:businessSlug/reservations", getAllReservationsController);
 
-// Get a reservation
-app.get('/api/businesses/:businessSlug/reservation/:reservationId', async (c) => {
-  const reservationId = c.req.param('reservationId')
-   
-  // Read the businessSlug in the URL
-  const businessSlug = c.req.param('businessSlug')
+// Get single reservation
+app.get('/api/businesses/:businessSlug/reservation/:reservationId', getSingleReservationController);
 
-  // Call getBusinessBySlug helper function
-  const { business, error: businessError } = await getBusinessBySlug(businessSlug)
+// Create reservation
+app.post('/api/businesses/:businessSlug/reservation', createReservationController);
 
-  if (businessError) {
-    return c.json({ message: 'Failed to fetch business', error: businessError.message }, 500)
-  }
+// app.post('/api/reservations', async (c) => {
 
-  if (!business) {
-    return c.json({ message: 'Business not found' }, 404)
-  }
+//   const { business, error: businessError } = await getBusinessBySlug(businessSlug)
+
+//     if (!business) {
+//     return c.json({ message: 'Business not found' }, 400)
+//   }
+
+//   if (businessError) {
+//     return c.json({ message: 'Failed to fetch business', error: businessError.message }, 500)
+//   }
 
 
-  const { data: row, error } = await supabase
-    .from('reservations')
-    .select('id,event_date,guest_count,selected_package')
-    .eq('id', reservationId)
-    .eq('business_id', business.id)
-    .maybeSingle()
+//   const payload = {
+//     business_id: business.id,
+//     event_date: String(body.eventDate),
+//     guest_count: Number(body.guestCount),
+//     selected_package: body.selectedPackage as SelectedPackage,
+//   }
 
-  if (error) {
-    return c.json({ message: 'Failed to fetch reservation', error: error.message }, 500)
-  }
+//   const { data: rows, error } = await supabase
+//     .from('reservations')
+//     .insert(payload)
+//     .select('id,event_date,guest_count,selected_package')
 
-  if (!row) {
-    return c.json({ message: 'Reservation not found' }, 404)
-  }
+//   if (error || !rows?.length) {
+//     return c.json(
+//       { message: 'Failed to create reservation', error: error?.message ?? 'No row returned' },
+//       500
+//     )
+//   }
 
-  const reservation: Reservation = {
-    id: row.id,
-    eventDate: row.event_date,
-    guestCount: row.guest_count,
-    selectedPackage: row.selected_package,
-  }
+//   const inserted = rows[0] as ReservationRow
+//   const newReservation: Reservation = {
+//     id: inserted.id,
+//     eventDate: inserted.event_date,
+//     guestCount: inserted.guest_count,
+//     selectedPackage: inserted.selected_package,
+//   }
 
-  return c.json({ message: 'success', data: reservation })
-})
+//   return c.json(
+//     {
+//       message: 'Reservation created successfully',
+//       data: newReservation,
+//     },
+//     201
+//   )
+// })
 
 export default app

@@ -1,9 +1,10 @@
 import { supabase } from "../lib/supabase.js";
 import { getBusinessBySlug } from "./business.service.js";
-import { Reservation } from "../types/reservation.types.js";
+import type { Reservation, ReservationDbRow } from "../types/reservation.types.js";
 
-// Still don't understand this
-type ServiceResult =
+
+// Tells TypeScript that this function will either return data or an error object
+type ReservationListServiceResult =
     | { data: Reservation[] }
     | {
         error: {
@@ -13,9 +14,27 @@ type ServiceResult =
         }
     }
 
+type SingleReservationServiceResult =
+    | { data: Reservation }
+    | {
+        error: {
+            message: string
+            details?: string
+            status: 404 | 500
+        }
+    }
+
+
+type CreateReservationBody = Pick<
+  Reservation,
+  "eventDate" | "guestCount" | "selectedPackage"
+>
+
+
+
 export async function getReservationsByBusinessSlug(businessSlug: string):
-    // Still don't understand this
-    Promise<ServiceResult> {
+    // this async function returns a Promise, and when that Promise finishes, the final value will match ServiceResult
+    Promise<ReservationListServiceResult> {
     // Call getBusinessBySlug function
     const { business, error: businessError } = await getBusinessBySlug(businessSlug)
     if (businessError) {
@@ -41,7 +60,6 @@ export async function getReservationsByBusinessSlug(businessSlug: string):
         .eq('business_id', business.id)
         .order('created_at', { ascending: false })
 
-    console.log(rows)
 
     if (error) {
         return {
@@ -62,7 +80,118 @@ export async function getReservationsByBusinessSlug(businessSlug: string):
     return { data: reservations }
 }
 
-export async function getSingleReservationByBusinessSlug(businessSlug: string) {
-    
-    
+export async function getSingleReservationByBusinessSlug(businessSlug: string, reservationId: string):
+    Promise<SingleReservationServiceResult> {
+
+    const { business, error: businessError } = await getBusinessBySlug(businessSlug)
+
+    if (businessError) {
+        return {
+            error: {
+                message: 'Failed to fetch business',
+                details: businessError.message,
+                status: 500,
+            }
+        }
+    }
+    if (!business) {
+        return {
+            error: {
+                message: "Business not found",
+                status: 404,
+            }
+        }
+    }
+
+    const { data: row, error } = await supabase
+        .from('reservations')
+        .select('id,event_date,guest_count,selected_package')
+        .eq('id', reservationId)
+        .eq('business_id', business.id)
+        .maybeSingle()
+
+    if (error) {
+        return {
+            error: {
+                message: "Failed to fetch reservation",
+                details: error.message,
+                status: 500,
+            }
+        }
+    }
+
+    if (!row) {
+        return {
+            error: {
+                message: "Reservation not found",
+                status: 404,
+            }
+        }
+    }
+
+    const reservation: Reservation = {
+        id: row.id,
+        eventDate: row.event_date,
+        guestCount: row.guest_count,
+        selectedPackage: row.selected_package,
+    }
+
+    return { data: reservation }
+
+}
+
+export async function createReservation(businessSlug: string, body: CreateReservationBody): Promise<SingleReservationServiceResult> {
+
+    const { business, error: businessError } = await getBusinessBySlug(businessSlug)
+
+    if (businessError) {
+        return {
+            error: {
+                message: 'Failed to fetch business',
+                details: businessError.message,
+                status: 500,
+            }
+        }
+    }
+    if (!business) {
+        return {
+            error: {
+                message: "Business not found",
+                status: 404,
+            }
+        }
+    }
+
+    const payload = {
+        business_id: business.id,
+        event_date: String(body.eventDate),
+        guest_count: Number(body.guestCount),
+        selected_package: body.selectedPackage,
+    }
+
+    const { data: rows, error } = await supabase
+        .from('reservations')
+        .insert(payload)
+        .select('id,event_date,guest_count,selected_package')
+
+    if (error || !rows?.length) {
+        return {
+            error: {
+                message: 'Failed to create reservation',
+                details: error?.message ?? 'No row returned',
+                status: 500,
+            }
+        } 
+    }
+
+    const inserted = rows[0] as ReservationDbRow
+    const newReservation: Reservation = {
+        id: inserted.id,
+        eventDate: inserted.event_date,
+        guestCount: inserted.guest_count,
+        selectedPackage: inserted.selected_package,
+    }
+
+   return { data : newReservation }
+
 }
