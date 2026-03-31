@@ -7,7 +7,6 @@ import { handleServiceResponse } from "../utils/service-response.js";
 export async function getAllReservationsController(c: Context) {
   const businessSlug = c.req.param("businessSlug");
   const result = await getReservationsByBusinessSlug(businessSlug);
-
   return handleServiceResponse(c, result)
 
 }

@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { supabase } from '../lib/supabase.js'
 import reservationRoutes from '../routes/reservation.routes.js'
+import paymentMethodRoutes from '../routes/payment-method.routes.js'
 
 const app = new Hono()
 
@@ -17,6 +17,7 @@ app.use('*', cors({ origin: corsOrigin }))
 app.get('/api/health', (c) => c.json({ ok: true }))
 
 app.route('/', reservationRoutes)
+app.route('/', paymentMethodRoutes)
 
 
 export default app

@@ -16,53 +16,49 @@ import {
   FieldTitle,
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { type PaymentMethod } from "@/lib/types"
+
+type PaymentMethodSelectorProps = {
+  paymentMethods: PaymentMethod[]
+}
 
 
-export function PaymentMethodSelector () {
-    return (
-        <>
-        <h1>Payment Selector</h1>
-        <Card>
-  <CardHeader>
-    <CardTitle>Payment Selector</CardTitle>
-    <CardDescription>Select your preferred payment option to reserve your date.</CardDescription>
-  </CardHeader>
-  <CardContent>
-    <RadioGroup defaultValue="bdo-bank-transfer" className="max-w-sm">
-      <FieldLabel htmlFor="plus-plan">
-        <Field orientation="horizontal">
-          <FieldContent>
-            <FieldTitle>BDO</FieldTitle>
-          </FieldContent>
-          <RadioGroupItem value="plus" id="plus-plan" />
-        </Field>
-      </FieldLabel>
-      <FieldLabel htmlFor="pro-plan">
-        <Field orientation="horizontal">
-          <FieldContent>
-            <FieldTitle>Pro</FieldTitle>
-            <FieldDescription>For growing businesses.</FieldDescription>
-          </FieldContent>
-          <RadioGroupItem value="pro" id="pro-plan" />
-        </Field>
-      </FieldLabel>
-      <FieldLabel htmlFor="enterprise-plan">
-        <Field orientation="horizontal">
-          <FieldContent>
-            <FieldTitle>Enterprise</FieldTitle>
-            <FieldDescription>
-              For large teams and enterprises.
-            </FieldDescription>
-          </FieldContent>
-          <RadioGroupItem value="enterprise" id="enterprise-plan" />
-        </Field>
-      </FieldLabel>
-    </RadioGroup>
-  </CardContent>
-  <CardFooter>
-    <p>Card Footer</p>
-  </CardFooter>
-</Card>
-        </>
-    )
+export function PaymentMethodSelector({ paymentMethods }: PaymentMethodSelectorProps) {
+  return (
+    <>
+      <h1>Payment Selector</h1>
+      <Card>
+        <CardHeader>
+          <CardTitle>Payment Selector</CardTitle>
+          <CardDescription>Select your preferred payment option to reserve your date.</CardDescription>
+        </CardHeader>
+
+       <CardContent>
+        <RadioGroup className="max-w-sm">
+          {paymentMethods.map((paymentMethod) => (
+            <FieldLabel
+              key={paymentMethod.id}
+              htmlFor={paymentMethod.id}
+            >
+              <Field orientation="horizontal">
+                <FieldContent>
+                  <FieldTitle>{paymentMethod.providerName}</FieldTitle>
+                </FieldContent>
+                <RadioGroupItem
+                  value={paymentMethod.id}
+                  id={paymentMethod.id}
+                />
+              </Field>
+            </FieldLabel>
+          ))}
+        </RadioGroup>
+      </CardContent>
+        
+
+      <CardFooter>
+        <p>Choose one payment method.</p>
+      </CardFooter>
+    </Card>
+    </>
+  )
 }

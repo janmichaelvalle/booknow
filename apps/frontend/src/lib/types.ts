@@ -12,3 +12,18 @@ export type Reservation = {
   guestCount: number
   selectedPackage: "classic" | "vintage"
 }
+
+export type PaymentMethodCategory =
+  | "bank_transfer"
+  | "e_wallet"
+  | "pay_on_event"
+
+export type PaymentMethod = {
+  id: string
+  category: PaymentMethodCategory
+  providerName: string
+  accountName: string
+  accountNumber: string
+  instructions: string | null
+  isActive: boolean
+}

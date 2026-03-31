@@ -2,7 +2,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
-import { type QuotationValues, type Reservation } from "@/lib/types"
+import { type QuotationValues, type Reservation, type PaymentMethod } from "@/lib/types"
 import { Link } from "react-router-dom"
 import {EventDetailsCard}  from "@/components/reservation/EventDetailsCard"
 import { PackageDetailsCard } from "@/components/reservation/PackageDetailsCard"
@@ -29,6 +29,7 @@ export function ReservationPage() {
 
     const [reservation, setReservation] = useState<Reservation | null>(null)
     const [isFetching, setIsFetching] = useState<boolean>(false)
+    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
 
     const form = useForm<ReservationFormValues>({
         defaultValues: {
@@ -87,6 +88,41 @@ export function ReservationPage() {
     //     return <></>
     // }
 
+    
+
+    // START OF USE EFFECT FOR PAYMENT
+
+    useEffect(() => {
+        async function loadPaymentMethods() {
+            setIsFetching(true)
+        
+         const res = await fetch(
+                `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/payment-methods`
+
+         )
+           if (!res.ok) {
+                setIsFetching(false);
+                setReservation(null);
+                return;
+            }
+            const json = await res.json()
+            const data = json.data as PaymentMethod[]
+           
+
+            setIsFetching(false)
+            setPaymentMethods(data)
+
+        }
+
+        loadPaymentMethods()
+
+    })
+
+
+
+    // END OF USER EFFECT PAYMENT
+
+
     if (!businessSlug || !reservationId) {
         return <p>Missing route parameters.</p>
     }
@@ -120,7 +156,9 @@ export function ReservationPage() {
             <PackageDetailsCard
                 packagePrice={packagePrice}
                 selectedPackage={reservation.selectedPackage}/>
-            <PaymentMethodSelector/>
+            <PaymentMethodSelector
+                paymentMethods = {paymentMethods}
+            />
         </>
     )
 
