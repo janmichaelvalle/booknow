@@ -14,7 +14,7 @@ app.get('/api/businesses/:businessSlug/reservation/:reservationId', getSingleRes
 // Create reservation
 app.post('/api/businesses/:businessSlug/reservation', createReservationController);
 
-// Edit quotation
+// Edit reservation
 app.put('/api/businesses/:businessSlug/reservation/:reservationId', updateReservationController)
 
 export default app

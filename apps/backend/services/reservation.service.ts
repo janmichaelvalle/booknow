@@ -1,62 +1,31 @@
 import { supabase } from "../lib/supabase.js";
-import { getBusinessBySlug } from "./business.service.js";
+import { getBusinessBySlugOrError } from "./business.service.js";
 import type { Reservation, ReservationDbRow } from "../types/reservation.types.js";
+import type { ServiceResponse } from "../types/service-response.types.js";
 
 
-// Tells TypeScript that this function will either return data or an error object
-type ReservationListServiceResult =
-    | { data: Reservation[] }
-    | {
-        error: {
-            message: string
-            details?: string
-            status: 404 | 500
-        }
-    }
-
-type SingleReservationServiceResult =
-    | { data: Reservation }
-    | {
-        error: {
-            message: string
-            details?: string
-            status: 404 | 500
-        }
-    }
 
 type ReservationFormBody = Pick<
     Reservation,
     "eventDate" | "guestCount" | "selectedPackage"
 >
 
+
 export async function getReservationsByBusinessSlug(businessSlug: string):
     // this async function returns a Promise, and when that Promise finishes, the final value will match ServiceResult
-    Promise<ReservationListServiceResult> {
-    // Call getBusinessBySlug function
-    const { business, error: businessError } = await getBusinessBySlug(businessSlug)
-    if (businessError) {
-        return {
-            error: {
-                message: 'Failed to fetch business',
-                details: businessError.message,
-                status: 500,
-            }
-        }
+    Promise<ServiceResponse<Reservation[]>> {
+
+    const businessResult = await getBusinessBySlugOrError(businessSlug)
+    if ("error" in businessResult) {
+        return businessResult
     }
-    if (!business) {
-        return {
-            error: {
-                message: "Business not found",
-                status: 404,
-            }
-        }
-    }
+    const business = businessResult.business
+
     const { data: rows, error } = await supabase
         .from('reservations')
         .select('id,event_date,guest_count,selected_package')
         .eq('business_id', business.id)
         .order('created_at', { ascending: false })
-
 
     if (error) {
         return {
@@ -78,27 +47,13 @@ export async function getReservationsByBusinessSlug(businessSlug: string):
 }
 
 export async function getSingleReservationByBusinessSlug(businessSlug: string, reservationId: string):
-    Promise<SingleReservationServiceResult> {
+    Promise<ServiceResponse<Reservation>> {
 
-    const { business, error: businessError } = await getBusinessBySlug(businessSlug)
-
-    if (businessError) {
-        return {
-            error: {
-                message: 'Failed to fetch business',
-                details: businessError.message,
-                status: 500,
-            }
-        }
+    const businessResult = await getBusinessBySlugOrError(businessSlug)
+    if ("error" in businessResult) {
+        return businessResult
     }
-    if (!business) {
-        return {
-            error: {
-                message: "Business not found",
-                status: 404,
-            }
-        }
-    }
+    const business = businessResult.business
 
     const { data: row, error } = await supabase
         .from('reservations')
@@ -137,27 +92,13 @@ export async function getSingleReservationByBusinessSlug(businessSlug: string, r
 
 }
 
-export async function createReservation(businessSlug: string, body: ReservationFormBody): Promise<SingleReservationServiceResult> {
+export async function createReservation(businessSlug: string, body: ReservationFormBody): Promise<ServiceResponse<Reservation>> {
 
-    const { business, error: businessError } = await getBusinessBySlug(businessSlug)
-
-    if (businessError) {
-        return {
-            error: {
-                message: 'Failed to fetch business',
-                details: businessError.message,
-                status: 500,
-            }
-        }
+    const businessResult = await getBusinessBySlugOrError(businessSlug)
+    if ("error" in businessResult) {
+        return businessResult
     }
-    if (!business) {
-        return {
-            error: {
-                message: "Business not found",
-                status: 404,
-            }
-        }
-    }
+    const business = businessResult.business
     const payload = {
         business_id: business.id,
         event_date: String(body.eventDate),
@@ -190,25 +131,12 @@ export async function createReservation(businessSlug: string, body: ReservationF
 
 }
 
-export async function updateReservation(businessSlug: string, body: ReservationFormBody, reservationId: Reservation['id']): Promise<SingleReservationServiceResult> {
-    const { business, error: businessError } = await getBusinessBySlug(businessSlug)
-    if (businessError) {
-        return {
-            error: {
-                message: 'Failed to fetch business',
-                details: businessError.message,
-                status: 500,
-            }
-        }
+export async function updateReservation(businessSlug: string, body: ReservationFormBody, reservationId: Reservation['id']): Promise<ServiceResponse<Reservation>> {
+    const businessResult = await getBusinessBySlugOrError(businessSlug)
+    if ("error" in businessResult) {
+        return businessResult
     }
-    if (!business) {
-        return {
-            error: {
-                message: "Business not found",
-                status: 404,
-            }
-        }
-    }
+    const business = businessResult.business
 
     const payload = {
         business_id: business.id,
