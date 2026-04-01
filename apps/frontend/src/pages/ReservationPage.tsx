@@ -158,6 +158,7 @@ export function ReservationPage() {
                 selectedPackage={reservation.selectedPackage}/>
             <PaymentMethodSelector
                 paymentMethods = {paymentMethods}
+                packagePrice={packagePrice}
             />
         </>
     )
