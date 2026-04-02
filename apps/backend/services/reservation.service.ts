@@ -7,7 +7,7 @@ import type { ServiceResponse } from "../types/service-response.types.js";
 
 type ReservationFormBody = Pick<
     Reservation,
-    "eventDate" | "guestCount" | "selectedPackage"
+    "eventDate" | "guestCount" | "selectedPackage" 
 >
 
 
@@ -23,7 +23,7 @@ export async function getReservationsByBusinessSlug(businessSlug: string):
 
     const { data: rows, error } = await supabase
         .from('reservations')
-        .select('id,event_date,guest_count,selected_package')
+        .select('id,event_date,guest_count,selected_package,status')
         .eq('business_id', business.id)
         .order('created_at', { ascending: false })
 
@@ -38,9 +38,11 @@ export async function getReservationsByBusinessSlug(businessSlug: string):
     }
     const reservations: Reservation[] = rows.map((row) => ({
         id: row.id,
+        reservationStatus: row.status,
         eventDate: row.event_date,
         guestCount: row.guest_count,
         selectedPackage: row.selected_package,
+        
     }))
 
     return { data: reservations }
@@ -57,7 +59,7 @@ export async function getSingleReservationByBusinessSlug(businessSlug: string, r
 
     const { data: row, error } = await supabase
         .from('reservations')
-        .select('id,event_date,guest_count,selected_package')
+        .select('id,event_date,guest_count,selected_package,status',)
         .eq('id', reservationId)
         .eq('business_id', business.id)
         .maybeSingle()
@@ -86,6 +88,7 @@ export async function getSingleReservationByBusinessSlug(businessSlug: string, r
         eventDate: row.event_date,
         guestCount: row.guest_count,
         selectedPackage: row.selected_package,
+        reservationStatus: row.status
     }
 
     return { data: reservation }
@@ -126,6 +129,7 @@ export async function createReservation(businessSlug: string, body: ReservationF
         eventDate: inserted.event_date,
         guestCount: inserted.guest_count,
         selectedPackage: inserted.selected_package,
+        reservationStatus: "pending_acceptance"
     }
     return { data: newReservation }
 
@@ -173,6 +177,7 @@ export async function updateReservation(businessSlug: string, body: ReservationF
         eventDate: updatedData.event_date,
         guestCount: updatedData.guest_count,
         selectedPackage: updatedData.selected_package,
+       
     }
 
     return { data: updatedReservation }

@@ -6,14 +6,28 @@ import { EventDetailsCard } from "@/components/reservation/EventDetailsCard"
 import { PackageDetailsCard } from "@/components/reservation/PackageDetailsCard"
 import { PaymentMethodSelector } from "@/components/reservation/PaymentMethodSelector"
 import { useQuery } from "@tanstack/react-query"
+import { InfoIcon } from "lucide-react"
+import { useState } from "react"
+import { supabase } from "@/lib/supabase"
+
+import {
+    Alert,
+    AlertDescription,
+    AlertTitle,
+} from "@/components/ui/alert"
 
 
 
 export function ReservationPage() {
     const navigate = useNavigate()
     const { reservationId, businessSlug } = useParams()
+    const [selectedFile, setSelectedFile] = useState<File | null>(null)
+    const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("")
+    const canSubmitPayment = !!selectedPaymentMethodId && !!selectedFile
+    let statusTitle = ""
+    let statusDescription = ""
 
-    const { data: reservation, isPending: isReservationPending, error: reservationError,} = useQuery({
+    const { data: reservation, isPending: isReservationPending, error: reservationError, } = useQuery({
         queryKey: ["reservation", businessSlug, reservationId],
         queryFn: async (): Promise<Reservation> => {
             const res = await fetch(
@@ -25,7 +39,7 @@ export function ReservationPage() {
             }
 
             const data = await res.json()
-            return data.data ?? []
+            return data.data
         },
         enabled: !!businessSlug && !!reservationId,
     })
@@ -72,10 +86,99 @@ export function ReservationPage() {
 
     const packagePrice = (reservation.selectedPackage === "classic" ? reservation.guestCount * 50 : reservation.guestCount * 100)
 
+    if (reservation.reservationStatus === "pending_acceptance") {
+        statusTitle = "Reservation pending acceptance"
+        statusDescription =
+            "Your reservation has been submitted and is waiting for the business to review it."
+    }
+
+    if (reservation.reservationStatus === "booking_rejected") {
+        statusTitle = "Reservation rejected"
+        statusDescription =
+            "Your reservation request was not accepted by the business."
+    }
+
+    if (reservation.reservationStatus === "pending_payment") {
+        statusTitle = "Payment required"
+        statusDescription =
+            "Your reservation was accepted. Please complete your payment to continue with the booking."
+    }
+
+    if (reservation.reservationStatus === "pending_verification") {
+        statusTitle = "Payment pending verification"
+        statusDescription =
+            "We've received your payment proof. Your reservation will be confirmed once the payment is verified. No further action is needed at this time."
+    }
+
+    if (reservation.reservationStatus === "payment_rejected") {
+        statusTitle = "Payment rejected"
+        statusDescription =
+            "Your payment proof was rejected. Please review the payment instructions and submit a new proof of payment."
+    }
+
+    if (reservation.reservationStatus === "confirmed") {
+        statusTitle = "Reservation confirmed"
+        statusDescription =
+            "Your reservation has been confirmed. No further action is needed at this time."
+    }
+
+    async function handleSubmitPayment(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
+        console.log("Submit started")
+
+  console.log("reservation:", reservation)
+  console.log("selectedPaymentMethodId:", selectedPaymentMethodId)
+  console.log("selectedFile:", selectedFile)
+
+        if (!reservation || !selectedPaymentMethodId || !selectedFile) {
+            return
+        }
+
+        const fileExt = selectedFile.name.split(".").pop()
+        const filePath = `${reservation.id}/${Date.now()}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+            .from("payment-proofs")
+            .upload(filePath, selectedFile, {
+                cacheControl: "3600",
+                upsert: false,
+            })
+
+        if (uploadError) {
+            console.error("Upload failed:", uploadError.message)
+            return
+        }
+
+        const { error: updateError } = await supabase
+            .from("reservations")
+            .update({
+                payment_method_id: selectedPaymentMethodId,
+                payment_proof_path: filePath,
+                status: "pending_verification",
+            })
+            .eq("id", reservation.id)
+
+        if (updateError) {
+            console.error("Reservation update failed:", updateError.message)
+            return
+        }
+
+        console.log("Payment submitted successfully")
+    }
+
+
     return (
         <>
             <Link to={`/${businessSlug}/reservations`}>Back</Link>
+
             <h1>This is the reservation page</h1>
+            <Alert>
+                <InfoIcon />
+                <AlertTitle>{statusTitle}</AlertTitle>
+                <AlertDescription>
+                    {statusDescription}
+                </AlertDescription>
+            </Alert>
             <Button type="button" onClick={() =>
                 navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
                     state: {
@@ -92,10 +195,22 @@ export function ReservationPage() {
             <PackageDetailsCard
                 packagePrice={packagePrice}
                 selectedPackage={reservation.selectedPackage} />
-            <PaymentMethodSelector
-                paymentMethods={paymentMethods}
-                packagePrice={packagePrice}
-            />
+            <form onSubmit={handleSubmitPayment}>
+
+                <PaymentMethodSelector
+                    paymentMethods={paymentMethods}
+                    packagePrice={packagePrice}
+                    selectedPaymentMethodId={selectedPaymentMethodId}
+                    setSelectedPaymentMethodId={setSelectedPaymentMethodId}
+                    selectedFile={selectedFile}
+                    setSelectedFile={setSelectedFile}
+                    reservation={reservation}
+                />
+                <Button type="submit" disabled={!canSubmitPayment}>
+                    Submit Payment & Reserve Date
+                </Button>
+            </form>
+
         </>
     )
 

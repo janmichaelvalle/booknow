@@ -14,23 +14,26 @@ import {
   FieldTitle,
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { type PaymentMethod } from "@/lib/types"
-import { useState } from "react"
+import { type PaymentMethod, type Reservation } from "@/lib/types"
 
 type PaymentMethodSelectorProps = {
   paymentMethods: PaymentMethod[],
   packagePrice: number,
+  selectedPaymentMethodId: string
+  setSelectedPaymentMethodId: React.Dispatch<React.SetStateAction<string>>
+  selectedFile: File | null
+  setSelectedFile: React.Dispatch<React.SetStateAction<File | null>>
+  reservation: Reservation
 }
 
 
-export function PaymentMethodSelector({ paymentMethods, packagePrice }: PaymentMethodSelectorProps) {
-  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState("")
+export function PaymentMethodSelector({ paymentMethods, packagePrice, selectedPaymentMethodId,  setSelectedPaymentMethodId, selectedFile , setSelectedFile }: PaymentMethodSelectorProps) {
+
   const selectedPaymentMethod = paymentMethods.find(
     // (method) => method.id === selectedPaymentMethodId
     (paymentMethod) => paymentMethod.id === selectedPaymentMethodId
   )
 
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const previewUrl =
   // Every file has a type athe nwe just check it's an image
     selectedFile && selectedFile.type.startsWith("image/")

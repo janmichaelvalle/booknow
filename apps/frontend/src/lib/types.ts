@@ -11,6 +11,8 @@ export type Reservation = {
   eventDate: string
   guestCount: number
   selectedPackage: "classic" | "vintage"
+  reservationStatus: string
+  
 }
 
 export type PaymentMethodCategory =

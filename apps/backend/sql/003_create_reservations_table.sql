@@ -20,6 +20,8 @@ create table if not exists public.reservations (
     )
   ),
   rejection_reason text,
+  payment_method_id uuid references public.payment_methods(id),
+  payment_proof_path text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
