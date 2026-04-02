@@ -37,11 +37,9 @@ export function ReservationsListPage() {
   const { businessSlug } = useParams()
 
   async function fetchReservations(): Promise<Reservation[]> {
-
     const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservations`)
     const data = await res.json()
-
-    return data?.data
+    return data.data
   }
 
   const { data: reservations, isPending } = useQuery({

@@ -30,6 +30,16 @@ export function PaymentMethodSelector({ paymentMethods, packagePrice }: PaymentM
     (paymentMethod) => paymentMethod.id === selectedPaymentMethodId
   )
 
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const previewUrl =
+  // Every file has a type athe nwe just check it's an image
+    selectedFile && selectedFile.type.startsWith("image/")
+    // Temporary local URL for the selected file
+      ? URL.createObjectURL(selectedFile)
+      : null
+
+
+
   return (
     <>
 
@@ -93,26 +103,43 @@ export function PaymentMethodSelector({ paymentMethods, packagePrice }: PaymentM
                 htmlFor="payment-proof"
                 className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-300 px-6 py-12 text-center"
               >
-                <div className="mb-4 text-2xl">📤</div>
+                {previewUrl ? (
+                  <img
+                    src={previewUrl}
+                    alt="Payment proof preview"
+                    className="mb-4 h-32 w-32 rounded-md object-cover"
+                  /> 
+                ): (
+                     <div className="mb-4 text-2xl">📤</div>
+                )}
+
+               
 
                 <p className="text-lg font-medium text-gray-800">
-                  Choose a file or drag & drop it here
+                  {selectedFile ? selectedFile.name : "Choose a file or drag & drop it here"}
+
                 </p>
 
                 <p className="mt-2 text-sm text-gray-500">
-                  JPEG, PNG, PDF, and MP4 formats, up to 50MB
+                  Images files up to 10 MB
                 </p>
 
                 <div className="mt-6 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700">
-                  Browse File
+                  {selectedFile ? "Change File" : "Browse File"}
+                  
                 </div>
               </label>
 
               <input
                 id="payment-proof"
                 type="file"
-                accept=".jpg,.jpeg,.png,.pdf,.mp4"
+                accept=".jpg,.jpeg,.png"
                 className="hidden"
+                onChange={(e) => {
+                  // Take the first selected file if there is one. Otherwise, set it to null.
+                  const file = e.target.files?.[0] ?? null
+                  setSelectedFile(file)
+                }}
               />
             </CardContent>
           </Card>

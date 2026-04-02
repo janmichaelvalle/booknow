@@ -9,6 +9,17 @@ create table if not exists public.reservations (
   event_date timestamptz not null,
   guest_count integer not null check (guest_count > 0),
   selected_package text not null check (selected_package in ('classic', 'vintage')),
+  status text not null default 'pending_acceptance' check (
+    status in (
+      'pending_acceptance',
+      'booking_rejected',
+      'pending_payment',
+      'pending_verification',
+      'payment_rejected',
+      'confirmed'
+    )
+  ),
+  rejection_reason text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -34,4 +45,3 @@ create index if not exists reservations_event_date_idx
 
 create index if not exists reservations_business_id_idx
   on public.reservations (business_id);
-
