@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getAllReservationsController, getSingleReservationController, createReservationController, updateReservationController } from "../controllers/reservation.controller.js";
+import { getAllReservationsController, getSingleReservationController, createReservationController, updateReservationController, updateReservationStatusController} from "../controllers/reservation.controller.js";
 
 
 
@@ -16,5 +16,8 @@ app.post('/api/businesses/:businessSlug/reservation', createReservationControlle
 
 // Edit reservation
 app.put('/api/businesses/:businessSlug/reservation/:reservationId', updateReservationController)
+
+// Accept reservation
+app.put('/api/businesses/:businessSlug/reservation/:reservationId/status', updateReservationStatusController )
 
 export default app

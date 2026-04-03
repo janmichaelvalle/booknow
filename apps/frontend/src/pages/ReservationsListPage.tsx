@@ -74,6 +74,7 @@ export function ReservationsListPage() {
         <TableHeader>
           <TableRow>
             <TableHead className="w-[100px]">ID</TableHead>
+            <TableHead>Status</TableHead>
             <TableHead>Event Date</TableHead>
             <TableHead>Guest Count</TableHead>
             <TableHead>Package</TableHead>

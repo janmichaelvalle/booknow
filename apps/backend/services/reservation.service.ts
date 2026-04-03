@@ -9,6 +9,10 @@ type ReservationFormBody = Pick<
     "eventDate" | "guestCount" | "selectedPackage"
 >
 
+type UpdateReservationStatusBody = Pick<
+    Reservation,
+    "reservationStatus" | "rejectionReason"
+>
 
 export async function getReservationsByBusinessSlug(businessSlug: string):
     // this async function returns a Promise, and when that Promise finishes, the final value will match ServiceResult
@@ -168,7 +172,6 @@ export async function updateReservation(businessSlug: string, body: ReservationF
             }
         }
     }
-
     // After the update, Supabase returns an array of rows. Since it is just one reservation, it will just have one row
     const updatedData = rows[0] as ReservationDbRow
 
@@ -182,6 +185,46 @@ export async function updateReservation(businessSlug: string, body: ReservationF
     }
 
     return { data: updatedReservation }
+}
+
+export async function updateReservationStatus(businessSlug: string, reservationId: Reservation['id'], reservationStatus, rejectionReason): Promise<ServiceResponse<UpdateReservationStatusBody>> {
+    const businessResult = await getBusinessBySlugOrError(businessSlug)
+    if ("error" in businessResult) {
+        return businessResult
+    }
+    const business = businessResult.business
+
+    const payload = {
+        status: reservationStatus,
+        rejection_reason: rejectionReason
+    }
+
+    const { data: rows, error } = await supabase
+        .from('reservations')
+        .update(payload)
+        .eq('id', reservationId)
+        .eq('business_id', business.id)
+        .select('id,status,rejection_reason')
+
+    if (error || !rows?.length) {
+        return {
+            error: {
+                message: 'Failed to update reservation',
+                details: error?.message ?? 'No row returned',
+                status: 500,
+            }
+        }
+    }
+    const updatedData = rows[0] as ReservationDbRow
+
+    // Creates a new object in a frontend friendly 
+    const updatedReservationStatus: UpdateReservationStatusBody = {
+        reservationStatus: updatedData.status,
+        rejectionReason: updatedData.rejection_reason
+    }
+
+
+    return { data: updatedReservationStatus }
 
 
 }
