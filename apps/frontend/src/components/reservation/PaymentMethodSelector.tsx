@@ -14,7 +14,7 @@ import {
   FieldTitle,
 } from "@/components/ui/field"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { type PaymentMethod, type Reservation } from "@/lib/types"
+import { type PaymentMethod } from "@/lib/types"
 
 type PaymentMethodSelectorProps = {
   paymentMethods: PaymentMethod[],
@@ -23,11 +23,16 @@ type PaymentMethodSelectorProps = {
   setSelectedPaymentMethodId: React.Dispatch<React.SetStateAction<string>>
   selectedFile: File | null
   setSelectedFile: React.Dispatch<React.SetStateAction<File | null>>
-  reservation: Reservation
+  uploadedProofUrl: string | null
+  disabled: boolean
 }
 
 
-export function PaymentMethodSelector({ paymentMethods, packagePrice, selectedPaymentMethodId,  setSelectedPaymentMethodId, selectedFile , setSelectedFile }: PaymentMethodSelectorProps) {
+export function PaymentMethodSelector({ paymentMethods, packagePrice, selectedPaymentMethodId, setSelectedPaymentMethodId, selectedFile, setSelectedFile, uploadedProofUrl, disabled }: PaymentMethodSelectorProps) {
+
+
+
+
 
   const selectedPaymentMethod = paymentMethods.find(
     // (method) => method.id === selectedPaymentMethodId
@@ -35,13 +40,11 @@ export function PaymentMethodSelector({ paymentMethods, packagePrice, selectedPa
   )
 
   const previewUrl =
-  // Every file has a type athe nwe just check it's an image
+    // Every file has a type athe nwe just check it's an image
     selectedFile && selectedFile.type.startsWith("image/")
-    // Temporary local URL for the selected file
+      // Temporary local URL for the selected file
       ? URL.createObjectURL(selectedFile)
-      : null
-
-
+      : uploadedProofUrl
 
   return (
     <>
@@ -53,9 +56,8 @@ export function PaymentMethodSelector({ paymentMethods, packagePrice, selectedPa
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {/* RadioGroup  groups all radio buttons together */}
           <RadioGroup
-
+            disabled = {disabled}
             value={selectedPaymentMethodId}
             onValueChange={setSelectedPaymentMethodId}>
             {paymentMethods.map((paymentMethod) => (
@@ -111,29 +113,37 @@ export function PaymentMethodSelector({ paymentMethods, packagePrice, selectedPa
                     src={previewUrl}
                     alt="Payment proof preview"
                     className="mb-4 h-32 w-32 rounded-md object-cover"
-                  /> 
-                ): (
-                     <div className="mb-4 text-2xl">📤</div>
+                  />
+                ) : (
+                  <div className="mb-4 text-2xl">📤</div>
                 )}
 
-               
+                {disabled && uploadedProofUrl ? (
+                  <>
+                    <p className="text-lg font-medium text-gray-800">
+                      Payment proof uploaded
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-lg font-medium text-gray-800">
+                      {selectedFile ? selectedFile.name : "Choose a file or drag & drop it here"}
+                    </p>
 
-                <p className="text-lg font-medium text-gray-800">
-                  {selectedFile ? selectedFile.name : "Choose a file or drag & drop it here"}
+                    <p className="mt-2 text-sm text-gray-500">
+                      Images files up to 10 MB
+                    </p>
 
-                </p>
+                    <div className="mt-6 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700">
+                      {selectedFile ? "Change File" : "Browse File"}
+                    </div>
+                  </>
+                )}
 
-                <p className="mt-2 text-sm text-gray-500">
-                  Images files up to 10 MB
-                </p>
-
-                <div className="mt-6 rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700">
-                  {selectedFile ? "Change File" : "Browse File"}
-                  
-                </div>
               </label>
 
               <input
+                disabled={disabled}
                 id="payment-proof"
                 type="file"
                 accept=".jpg,.jpeg,.png"

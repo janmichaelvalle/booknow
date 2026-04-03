@@ -1,6 +1,6 @@
 import { supabase } from "../lib/supabase.js";
-import { BusinessRow } from "../types/business.types.js";
-import type { BusinessResult } from "../types/business.types.js";
+import { BusinessRow } from "../lib/types.js";
+import type { BusinessResult } from "../lib/types.js";
 
 export async function getBusinessBySlugOrError(slug: string): Promise<BusinessResult> {
   const { data, error } = await supabase

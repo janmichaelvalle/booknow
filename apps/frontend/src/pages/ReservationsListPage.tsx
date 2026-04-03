@@ -87,6 +87,7 @@ export function ReservationsListPage() {
                   {reservation.id}
                 </Link>
               </TableCell>
+              <TableCell>{reservation.reservationStatus}</TableCell>
               <TableCell>{reservation.eventDate}</TableCell>
               <TableCell>{reservation.guestCount}</TableCell>
               <TableCell>{reservation.selectedPackage}</TableCell>

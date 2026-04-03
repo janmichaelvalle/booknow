@@ -11,8 +11,10 @@ export type Reservation = {
   eventDate: string
   guestCount: number
   selectedPackage: "classic" | "vintage"
-  reservationStatus: string
-  
+  reservationStatus: string,
+  paymentMethodId?: string | null
+  paymentProofPath?: string | null
+  rejectionReason?: string | null
 }
 
 export type PaymentMethodCategory =

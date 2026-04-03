@@ -1,7 +1,6 @@
 import { supabase } from "../lib/supabase.js"; 
 import { getBusinessBySlugOrError } from "./business.service.js";
-import type { PaymentMethod } from "../types/payment-method.types.js";
-import type { ServiceResponse } from "../types/service-response.types.js";
+import type { PaymentMethod, ServiceResponse } from "../lib/types.js";
 
 
 

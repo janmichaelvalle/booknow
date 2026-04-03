@@ -9,6 +9,7 @@ import { useQuery } from "@tanstack/react-query"
 import { InfoIcon } from "lucide-react"
 import { useState } from "react"
 import { supabase } from "@/lib/supabase"
+import { useEffect } from "react"
 
 import {
     Alert,
@@ -45,6 +46,7 @@ export function ReservationPage() {
     })
 
 
+
     const { data: paymentMethods, isPending: isPaymentMethodsPending, error: paymentMethodsError } = useQuery({
         queryKey: ["paymentMethods", businessSlug],
         queryFn: async (): Promise<PaymentMethod[]> => {
@@ -58,6 +60,18 @@ export function ReservationPage() {
         enabled: !!businessSlug,
         initialData: [],
     })
+
+    useEffect(() => {
+        console.log("reservation in useEffect:", reservation)
+        if (reservation?.paymentMethodId) {
+            setSelectedPaymentMethodId(reservation.paymentMethodId)
+        }
+    }, [reservation])
+
+
+    if (!businessSlug || !reservationId) {
+        return <p>Missing route parameters.</p>
+    }
 
     if (!businessSlug || !reservationId) {
         return <p>Missing route parameters.</p>
@@ -124,11 +138,6 @@ export function ReservationPage() {
 
     async function handleSubmitPayment(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
-        console.log("Submit started")
-
-  console.log("reservation:", reservation)
-  console.log("selectedPaymentMethodId:", selectedPaymentMethodId)
-  console.log("selectedFile:", selectedFile)
 
         if (!reservation || !selectedPaymentMethodId || !selectedFile) {
             return
@@ -166,6 +175,20 @@ export function ReservationPage() {
         console.log("Payment submitted successfully")
     }
 
+    const uploadedProofUrl = reservation.paymentProofPath
+        ? supabase.storage
+            .from("payment-proofs")
+            .getPublicUrl(reservation.paymentProofPath).data.publicUrl
+        : null
+
+
+    const isPaymentLocked =
+        reservation.reservationStatus === "pending_verification" ||
+        reservation.reservationStatus === "confirmed"
+
+
+
+
 
     return (
         <>
@@ -179,16 +202,7 @@ export function ReservationPage() {
                     {statusDescription}
                 </AlertDescription>
             </Alert>
-            <Button type="button" onClick={() =>
-                navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
-                    state: {
-                        eventDate: reservation.eventDate,
-                        guestCount: reservation.guestCount,
-                        selectedPackage: reservation.selectedPackage,
-                    }
-                })}>
-                Edit quotation
-            </Button>
+
             <EventDetailsCard
                 reservation={reservation}
             />
@@ -204,12 +218,24 @@ export function ReservationPage() {
                     setSelectedPaymentMethodId={setSelectedPaymentMethodId}
                     selectedFile={selectedFile}
                     setSelectedFile={setSelectedFile}
-                    reservation={reservation}
+                    uploadedProofUrl={uploadedProofUrl}
+                    disabled={isPaymentLocked}
+
                 />
-                <Button type="submit" disabled={!canSubmitPayment}>
+                <Button type="submit" disabled={!canSubmitPayment || isPaymentLocked}>
                     Submit Payment & Reserve Date
                 </Button>
             </form>
+            <Button disabled = {isPaymentLocked} type="button" onClick={() =>
+                navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
+                    state: {
+                        eventDate: reservation.eventDate,
+                        guestCount: reservation.guestCount,
+                        selectedPackage: reservation.selectedPackage,
+                    }
+                })}>
+                Edit quotation
+            </Button>
 
         </>
     )

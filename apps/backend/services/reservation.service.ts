@@ -1,13 +1,12 @@
 import { supabase } from "../lib/supabase.js";
 import { getBusinessBySlugOrError } from "./business.service.js";
-import type { Reservation, ReservationDbRow } from "../types/reservation.types.js";
-import type { ServiceResponse } from "../types/service-response.types.js";
+import type { Reservation, ReservationDbRow, ServiceResponse } from "../lib/types.js";
 
 
 
 type ReservationFormBody = Pick<
     Reservation,
-    "eventDate" | "guestCount" | "selectedPackage" 
+    "eventDate" | "guestCount" | "selectedPackage"
 >
 
 
@@ -42,7 +41,7 @@ export async function getReservationsByBusinessSlug(businessSlug: string):
         eventDate: row.event_date,
         guestCount: row.guest_count,
         selectedPackage: row.selected_package,
-        
+
     }))
 
     return { data: reservations }
@@ -59,7 +58,7 @@ export async function getSingleReservationByBusinessSlug(businessSlug: string, r
 
     const { data: row, error } = await supabase
         .from('reservations')
-        .select('id,event_date,guest_count,selected_package,status',)
+        .select('id,event_date,guest_count,selected_package,status,payment_method_id,payment_proof_path,rejection_reason')
         .eq('id', reservationId)
         .eq('business_id', business.id)
         .maybeSingle()
@@ -88,7 +87,10 @@ export async function getSingleReservationByBusinessSlug(businessSlug: string, r
         eventDate: row.event_date,
         guestCount: row.guest_count,
         selectedPackage: row.selected_package,
-        reservationStatus: row.status
+        reservationStatus: row.status,
+        paymentMethodId: row.payment_method_id,
+        paymentProofPath: row.payment_proof_path,
+        rejectionReason: row.rejection_reason,
     }
 
     return { data: reservation }
@@ -155,8 +157,7 @@ export async function updateReservation(businessSlug: string, body: ReservationF
         .update(payload)
         .eq('id', reservationId)
         .eq('business_id', business.id)
-        .select('id,event_date,guest_count,selected_package')
-
+        .select('id,event_date,guest_count,selected_package, status')
 
     if (error || !rows?.length) {
         return {
@@ -177,7 +178,7 @@ export async function updateReservation(businessSlug: string, body: ReservationF
         eventDate: updatedData.event_date,
         guestCount: updatedData.guest_count,
         selectedPackage: updatedData.selected_package,
-       
+        reservationStatus: updatedData.status
     }
 
     return { data: updatedReservation }

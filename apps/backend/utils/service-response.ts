@@ -1,5 +1,5 @@
 import type { Context } from "hono";
-import type { ServiceResponse } from "../types/service-response.types.js";
+import type { ServiceResponse } from "../lib/types.js";
 
 
 
