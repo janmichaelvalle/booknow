@@ -1,20 +1,13 @@
 import { supabase } from "../lib/supabase.js"; 
-import { getBusinessBySlugOrError } from "./business.service.js";
 import type { PaymentMethod, ServiceResponse } from "../lib/types.js";
 
 
-
-export async function getAllPaymentMethods(businessSlug: string): Promise<ServiceResponse<PaymentMethod[]>> {
-    const businessResult = await getBusinessBySlugOrError(businessSlug)
-    if ("error" in businessResult) {
-        return businessResult
-    }
-    const business = businessResult.business
+export async function getAllPaymentMethods(businessId: string): Promise<ServiceResponse<PaymentMethod[]>> {
 
     const { data: rows, error } = await supabase
         .from('payment_methods')
         .select('id,category,provider_name,account_name,account_number,instructions,is_active')
-        .eq('business_id', business.id)
+        .eq('business_id', businessId)
         .eq('is_active', true)
 
     if (error) {

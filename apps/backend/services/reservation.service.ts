@@ -14,20 +14,15 @@ type UpdateReservationStatusBody = Pick<
     "reservationStatus" | "rejectionReason"
 >
 
-export async function getReservationsByBusinessSlug(businessSlug: string):
+export async function getReservationsByBusinessSlug(businessId: string):
     // this async function returns a Promise, and when that Promise finishes, the final value will match ServiceResult
     Promise<ServiceResponse<Reservation[]>> {
 
-    const businessResult = await getBusinessBySlugOrError(businessSlug)
-    if ("error" in businessResult) {
-        return businessResult
-    }
-    const business = businessResult.business
-
+   
     const { data: rows, error } = await supabase
         .from('reservations')
         .select('id,event_date,guest_count,selected_package,status')
-        .eq('business_id', business.id)
+        .eq('business_id', businessId)
         .order('created_at', { ascending: false })
 
     if (error) {
@@ -51,20 +46,15 @@ export async function getReservationsByBusinessSlug(businessSlug: string):
     return { data: reservations }
 }
 
-export async function getSingleReservationByBusinessSlug(businessSlug: string, reservationId: string):
+export async function getSingleReservationByBusinessSlug(businessId: string, reservationId: string):
     Promise<ServiceResponse<Reservation>> {
 
-    const businessResult = await getBusinessBySlugOrError(businessSlug)
-    if ("error" in businessResult) {
-        return businessResult
-    }
-    const business = businessResult.business
 
     const { data: row, error } = await supabase
         .from('reservations')
         .select('id,event_date,guest_count,selected_package,status,payment_method_id,payment_proof_path,rejection_reason')
         .eq('id', reservationId)
-        .eq('business_id', business.id)
+        .eq('business_id', businessId)
         .maybeSingle()
 
     if (error) {
@@ -101,15 +91,10 @@ export async function getSingleReservationByBusinessSlug(businessSlug: string, r
 
 }
 
-export async function createReservation(businessSlug: string, body: ReservationFormBody): Promise<ServiceResponse<Reservation>> {
+export async function createReservation(businessId: string, body: ReservationFormBody): Promise<ServiceResponse<Reservation>> {
 
-    const businessResult = await getBusinessBySlugOrError(businessSlug)
-    if ("error" in businessResult) {
-        return businessResult
-    }
-    const business = businessResult.business
     const payload = {
-        business_id: business.id,
+        business_id: businessId,
         event_date: String(body.eventDate),
         guest_count: Number(body.guestCount),
         selected_package: body.selectedPackage,
@@ -141,15 +126,11 @@ export async function createReservation(businessSlug: string, body: ReservationF
 
 }
 
-export async function updateReservation(businessSlug: string, body: ReservationFormBody, reservationId: Reservation['id']): Promise<ServiceResponse<Reservation>> {
-    const businessResult = await getBusinessBySlugOrError(businessSlug)
-    if ("error" in businessResult) {
-        return businessResult
-    }
-    const business = businessResult.business
+export async function updateReservation(businessId: string, body: ReservationFormBody, reservationId: Reservation['id']): Promise<ServiceResponse<Reservation>> {
+
 
     const payload = {
-        business_id: business.id,
+        business_id: businessId,
         event_date: String(body.eventDate),
         guest_count: Number(body.guestCount),
         selected_package: body.selectedPackage,
@@ -160,7 +141,7 @@ export async function updateReservation(businessSlug: string, body: ReservationF
         .from('reservations')
         .update(payload)
         .eq('id', reservationId)
-        .eq('business_id', business.id)
+        .eq('business_id', businessId)
         .select('id,event_date,guest_count,selected_package, status')
 
     if (error || !rows?.length) {
@@ -187,12 +168,8 @@ export async function updateReservation(businessSlug: string, body: ReservationF
     return { data: updatedReservation }
 }
 
-export async function updateReservationStatus(businessSlug: string, reservationId: Reservation['id'], reservationStatus, rejectionReason): Promise<ServiceResponse<UpdateReservationStatusBody>> {
-    const businessResult = await getBusinessBySlugOrError(businessSlug)
-    if ("error" in businessResult) {
-        return businessResult
-    }
-    const business = businessResult.business
+export async function updateReservationStatus(businessId: string, reservationId: Reservation['id'], reservationStatus, rejectionReason): Promise<ServiceResponse<UpdateReservationStatusBody>> {
+   
 
     const payload = {
         status: reservationStatus,
@@ -203,7 +180,7 @@ export async function updateReservationStatus(businessSlug: string, reservationI
         .from('reservations')
         .update(payload)
         .eq('id', reservationId)
-        .eq('business_id', business.id)
+        .eq('business_id', businessId)
         .select('id,status,rejection_reason')
 
     if (error || !rows?.length) {
