@@ -11,6 +11,8 @@ import { useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { useEffect } from "react"
 import useAuth from "@/context/useAuth"
+import { ReservationStatusStepper } from "@/components/reservation/ReservationStatusStepper"
+
 
 import {
     Alert,
@@ -215,6 +217,7 @@ export function ReservationPage() {
 
         console.log("Reservation status updated")
     }
+    
 
     return (
         <>
@@ -227,6 +230,11 @@ export function ReservationPage() {
                     {statusDescription}
                 </AlertDescription>
             </Alert>
+            <div className="mt-6 mb-6">
+                <ReservationStatusStepper
+                reservationStatus = {reservation.reservationStatus} />
+            </div>
+            
 
             <EventDetailsCard
                 reservation={reservation}
@@ -267,7 +275,7 @@ export function ReservationPage() {
                         Accept Payment
                     </Button>
 
-                    <Button onClick={() => handleStatusUpdate("booking_rejected")}>
+                    <Button onClick={() => handleStatusUpdate("payment_rejected")}>
                         Decline Payment
                     </Button>
                 </>
