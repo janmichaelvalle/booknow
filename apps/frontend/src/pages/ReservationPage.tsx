@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase"
 import { useEffect } from "react"
 import useAuth from "@/context/useAuth"
 import { ReservationStatusStepper } from "@/components/reservation/ReservationStatusStepper"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 
 
 import {
@@ -283,7 +284,8 @@ export function ReservationPage() {
 
             {isAuthenticated && reservation.reservationStatus === "pending_acceptance" && (
                 <>
-                    <Button onClick={() => handleStatusUpdate("pending_payment")}>
+                    {/* <Button onClick={() => handleStatusUpdate("pending_payment")}> */}
+                    <Button onClick={() => ConfirmDialog}>
                         Accept Booking
                     </Button>
 

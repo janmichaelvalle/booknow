@@ -25,6 +25,8 @@ function App() {
   // }, []) // initial load
 
   return (
+    <div className="min-h-screen bg-muted/30">
+      <main className="mx-auto min-h-screen w-full max-w-md bg-background">
     <Routes>
       <Route path="/:businessSlug" element={<QuotationPage />}/>
       <Route path="/:businessSlug/reservation/:reservationId" element={<ReservationPage />} />
@@ -34,6 +36,8 @@ function App() {
         <Route path="/:businessSlug/reservations" element={<ReservationsListPage />} />
       </Route>
     </Routes>
+    </main>
+    </div>
   )
 }
 
