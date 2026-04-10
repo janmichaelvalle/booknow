@@ -5,7 +5,7 @@ import { ReservationsListPage } from "./pages/ReservationsListPage"
 import { LoginPage } from "./pages/LoginPage";
 import useAuth from './context/useAuth' 
 import { EditQuotationPage } from "./pages/EditQuotationPage"
-
+import { Toaster } from "@/components/ui/sonner"
 
 
 function App() {
@@ -36,6 +36,7 @@ function App() {
         <Route path="/:businessSlug/reservations" element={<ReservationsListPage />} />
       </Route>
     </Routes>
+    <Toaster />
     </main>
     </div>
   )

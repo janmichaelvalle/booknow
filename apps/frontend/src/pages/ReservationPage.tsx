@@ -10,9 +10,9 @@ import { InfoIcon } from "lucide-react"
 import { useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { useEffect } from "react"
-import useAuth from "@/context/useAuth"
 import { ReservationStatusStepper } from "@/components/reservation/ReservationStatusStepper"
-import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+
+
 
 
 import {
@@ -24,7 +24,6 @@ import {
 
 
 export function ReservationPage() {
-    const { isAuthenticated } = useAuth()
     const navigate = useNavigate()
     const { reservationId, businessSlug } = useParams()
     const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -32,6 +31,10 @@ export function ReservationPage() {
     const canSubmitPayment = !!selectedPaymentMethodId && !!selectedFile
     let statusTitle = ""
     let statusDescription = ""
+
+  
+
+
 
 
 
@@ -194,31 +197,6 @@ export function ReservationPage() {
         reservation.reservationStatus === "confirmed"
 
 
-    async function handleStatusUpdate(reservationStatus: string) {
-        if (!businessSlug || !reservationId) return
-
-        const res = await fetch(
-            `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}/status`,
-            {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    reservationStatus,
-                    rejectionReason: reservationStatus === "booking_rejected" ? "Rejected by admin" : null,
-                }),
-            }
-        )
-
-        if (!res.ok) {
-            console.error("Failed to update reservation status")
-            return
-        }
-
-        console.log("Reservation status updated")
-    }
-    
 
     return (
         <>
@@ -233,9 +211,9 @@ export function ReservationPage() {
             </Alert>
             <div className="mt-6 mb-6">
                 <ReservationStatusStepper
-                reservationStatus = {reservation.reservationStatus} />
+                    reservationStatus={reservation.reservationStatus} />
             </div>
-            
+
 
             <EventDetailsCard
                 reservation={reservation}
@@ -270,30 +248,8 @@ export function ReservationPage() {
                 })}>
                 Edit quotation
             </Button>
-            {isAuthenticated && reservation.reservationStatus === "pending_verification" && (
-                <>
-                    <Button onClick={() => handleStatusUpdate("confirmed")}>
-                        Accept Payment
-                    </Button>
+         
 
-                    <Button onClick={() => handleStatusUpdate("payment_rejected")}>
-                        Decline Payment
-                    </Button>
-                </>
-            )}
-
-            {isAuthenticated && reservation.reservationStatus === "pending_acceptance" && (
-                <>
-                    {/* <Button onClick={() => handleStatusUpdate("pending_payment")}> */}
-                    <Button onClick={() => ConfirmDialog}>
-                        Accept Booking
-                    </Button>
-
-                    <Button onClick={() => handleStatusUpdate("booking_rejected")}>
-                        Decline Booking
-                    </Button>
-                </>
-            )}
 
 
 
