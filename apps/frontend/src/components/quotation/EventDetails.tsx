@@ -13,10 +13,13 @@ import { Input } from "@/components/ui/input"
 import * as React from "react"
 import { Controller } from "react-hook-form"
 import type { Control } from "react-hook-form"
+import { DateTimeSlotPicker } from "./DateTimeSlotPicker"
 
 
 type FormValues = {
   eventDate: Date
+  startTime: string
+  endTime: string
   guestCount: number
   selectedPackage: "classic" | "vintage"
 }
@@ -38,7 +41,8 @@ export function EventDetails({ control }: EventDetailsProps) {
 
       </CardHeader>
       <CardContent>
-        <Controller
+            <DateTimeSlotPicker/>
+        {/* <Controller
           name="eventDate"
           control={control}
           render={({ field, fieldState }) => (
@@ -71,7 +75,7 @@ export function EventDetails({ control }: EventDetailsProps) {
             </Field>
           )}
 
-        />
+        /> */}
         <Controller
           name="guestCount"
           control={control}
@@ -85,16 +89,54 @@ export function EventDetails({ control }: EventDetailsProps) {
                 placeholder="Input number of guests"
                 value={field.value ?? ""}
                 onChange={(e) => {
-                 const raw = e.target.value
-                 const num = raw === "" ? undefined : Number(raw)
-                 // If user entered 0 or negative, force it to 1.
-                 field.onChange(num !== undefined && num < 1 ? 1 : num)
+                  const raw = e.target.value
+                  const num = raw === "" ? undefined : Number(raw)
+                  // If user entered 0 or negative, force it to 1.
+                  field.onChange(num !== undefined && num < 1 ? 1 : num)
                 }}
               />
               {fieldState.error && <FieldError errors={[fieldState.error]} />}
             </Field>
           )}
         />
+        {/* <Controller
+          name="startTime"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="startTime">Start Time</FieldLabel>
+              <Input
+                id="startTime"
+                type="time"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        /> */}
+{/* 
+        <Controller
+          name="endTime"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="endTime">End Time</FieldLabel>
+              <Input
+                id="endTime"
+                type="time"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+                className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        /> */}
+    
+
+
 
       </CardContent>
 

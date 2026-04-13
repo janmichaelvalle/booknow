@@ -13,9 +13,12 @@ import { type QuotationValues } from "@/lib/types"
 // The quotationSchema validates the user inputs
 const quotationSchema = z.object({
   eventDate: z.date(),
+  startTime: z.string().min(1, "Start time is required"),
+  endTime: z.string().min(1, "End time is required"),
   guestCount: z.number().int().min(1, "Guest count must be at least 1"),
   selectedPackage: z.enum(["classic", "vintage"]),
 })
+
 
 
 export function QuotationPage() {
@@ -30,6 +33,8 @@ export function QuotationPage() {
     resolver: zodResolver(quotationSchema),
     defaultValues: {
       eventDate: undefined,
+      startTime: "",
+      endTime: "",
       guestCount: undefined,
       selectedPackage: "classic",
     },
@@ -59,9 +64,9 @@ export function QuotationPage() {
     //   : vintagePackagePrice
 
     if (!businessSlug) {
-  console.error("Business slug is missing from the URL")
-  return
-}
+      console.error("Business slug is missing from the URL")
+      return
+    }
 
     const payload = {
       eventDate: data.eventDate.toISOString(),
@@ -89,7 +94,7 @@ export function QuotationPage() {
     }
 
     navigate(`/${businessSlug}/reservation/${reservationId}`)
-    
+
   }
 
 
