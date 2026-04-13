@@ -5,21 +5,22 @@ import { Link } from "react-router-dom"
 import { EventDetailsCard } from "@/components/reservation/EventDetailsCard"
 import { PackageDetailsCard } from "@/components/reservation/PackageDetailsCard"
 import { PaymentMethodSelector } from "@/components/reservation/PaymentMethodSelector"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+
 import { InfoIcon } from "lucide-react"
 import { useState } from "react"
 import { supabase } from "@/lib/supabase"
 import { useEffect } from "react"
 import { ReservationStatusStepper } from "@/components/reservation/ReservationStatusStepper"
 
-
-
-
 import {
     Alert,
     AlertDescription,
     AlertTitle,
 } from "@/components/ui/alert"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { toast } from "sonner"
+
 
 
 
@@ -31,8 +32,11 @@ export function ReservationPage() {
     const canSubmitPayment = !!selectedPaymentMethodId && !!selectedFile
     let statusTitle = ""
     let statusDescription = ""
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+    const queryClient = useQueryClient()
 
-  
+
+
 
 
 
@@ -146,9 +150,7 @@ export function ReservationPage() {
             "Your reservation has been confirmed. No further action is needed at this time."
     }
 
-    async function handleSubmitPayment(e: React.FormEvent<HTMLFormElement>) {
-        e.preventDefault()
-
+    async function handleSubmitPayment() {
         if (!reservation || !selectedPaymentMethodId || !selectedFile) {
             return
         }
@@ -164,8 +166,7 @@ export function ReservationPage() {
             })
 
         if (uploadError) {
-            console.error("Upload failed:", uploadError.message)
-            return
+            throw new Error("Upload failed")
         }
 
         const { error: updateError } = await supabase
@@ -178,12 +179,10 @@ export function ReservationPage() {
             .eq("id", reservation.id)
 
         if (updateError) {
-            console.error("Reservation update failed:", updateError.message)
-            return
+            throw new Error("Reservation update failed")
         }
-
-        console.log("Payment submitted successfully")
     }
+
 
     const uploadedProofUrl = reservation.paymentProofPath
         ? supabase.storage
@@ -221,8 +220,9 @@ export function ReservationPage() {
             <PackageDetailsCard
                 packagePrice={packagePrice}
                 selectedPackage={reservation.selectedPackage} />
-            <form onSubmit={handleSubmitPayment}>
-
+            <form>
+                {reservation.reservationStatus !== "pending_acceptance" &&
+                reservation.reservationStatus !== "booking_rejected" &&  (
                 <PaymentMethodSelector
                     paymentMethods={paymentMethods}
                     packagePrice={packagePrice}
@@ -234,10 +234,15 @@ export function ReservationPage() {
                     disabled={isPaymentLocked}
 
                 />
-                <Button type="submit" disabled={!canSubmitPayment || isPaymentLocked}>
+                )}
+                {reservation.reservationStatus === "pending_payment" && (
+                <Button type="button" onClick={() => setIsConfirmOpen(true)} disabled={!canSubmitPayment || isPaymentLocked}>
                     Submit Payment & Reserve Date
                 </Button>
+                )
+                }
             </form>
+            {reservation.reservationStatus === "pending_acceptance" && (
             <Button disabled={isPaymentLocked} type="button" onClick={() =>
                 navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
                     state: {
@@ -248,7 +253,32 @@ export function ReservationPage() {
                 })}>
                 Edit quotation
             </Button>
-         
+            )}
+            <ConfirmDialog
+                open={isConfirmOpen}
+                onOpenChange={setIsConfirmOpen}
+                onConfirm={async () => {
+                    await toast.promise(
+                        async () => {
+                            await handleSubmitPayment()
+                            await queryClient.invalidateQueries({
+                                queryKey: ["reservation", businessSlug, reservationId],
+                            })
+
+                            setIsConfirmOpen(false)
+                        },
+                        {
+                            loading: "Updating reservation...",
+                            success: "Payment submitted successfully.",
+                            error: "Failed to update reservation.",
+                            position: "top-center",
+                        }
+                    )
+                }}
+
+            />
+
+
 
 
 

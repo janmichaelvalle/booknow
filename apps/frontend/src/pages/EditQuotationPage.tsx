@@ -9,6 +9,8 @@ import { type QuotationValues } from "@/lib/types"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { toast } from "sonner"
 
 // Pick creates a smaller type from QuotationValues using only the fields this form needs.
 type EditQuotationFormValues = Pick<
@@ -21,12 +23,13 @@ type EditQuotationFormValues = Pick<
 export function EditQuotationPage() {
 
   // Instantiate navgiate
-   const navigate = useNavigate()
+  const navigate = useNavigate()
 
   // Gets the reservationNo in the URL parameter
   const { reservationId, businessSlug } = useParams()
   const [reservation, setReservation] = useState<Reservation | null>(null)
   const [isFetching, setIsFetching] = useState<boolean>(false)
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
 
   // Setup from with default values
   const form = useForm<EditQuotationFormValues>({
@@ -75,8 +78,8 @@ export function EditQuotationPage() {
 
 
   if (!businessSlug || !reservationId) {
-  return <p>Missing route parameters.</p>
-}
+    return <p>Missing route parameters.</p>
+  }
 
 
   // Show loading while reservation is still fetching
@@ -92,37 +95,37 @@ export function EditQuotationPage() {
 
   // Data comes from react hook form 
   async function onSubmit(data: EditQuotationFormValues) {
-  
-  
-  // if reservationNo is missing, stop the function immediately
-  if (!businessSlug || !reservationId) return
 
 
-  // Takes the values in the form and converts data to what the API requires to submitted.
-  const payload = {
-    eventDate: data.eventDate.toISOString(),
-    guestCount: data.guestCount,
-    selectedPackage: data.selectedPackage,
-  }
+    // if reservationNo is missing, stop the function immediately
+    if (!businessSlug || !reservationId) return
 
-  
-  // Send the updated reservation data to the backend API.
-  const res = await fetch(
-    `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}`,
-    {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+
+    // Takes the values in the form and converts data to what the API requires to submitted.
+    const payload = {
+      eventDate: data.eventDate.toISOString(),
+      guestCount: data.guestCount,
+      selectedPackage: data.selectedPackage,
     }
-  )
 
-  if (!res.ok) {
-    console.error("Failed to update reservation")
-    return
+
+    // Send the updated reservation data to the backend API.
+    const res = await fetch(
+      `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      }
+    )
+
+    if (!res.ok) {
+      throw new Error("Failed to update reservation")
+    }
+
+
+    navigate(`/${businessSlug}/reservation/${reservationId}`)
   }
-
-  navigate(`/${businessSlug}/reservation/${reservationId}`)
-}
 
 
 
@@ -130,23 +133,47 @@ export function EditQuotationPage() {
     <>
       <h1>This is the edit quotation</h1>
       <Link to={`/${businessSlug}/reservation/${reservationId}`}>Back</Link>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
-      <EventDetails
-        control={form.control}
-      />
-      <PackageDetails
-        control={form.control}
-        classicPackagePrice={classicPackagePrice}
-        vintagePackagePrice={vintagePackagePrice}
-      />
+      <form>
+        <EventDetails
+          control={form.control}
+        />
+        <PackageDetails
+          control={form.control}
+          classicPackagePrice={classicPackagePrice}
+          vintagePackagePrice={vintagePackagePrice}
+        />
 
-      <h1>Event Date: {new Date(reservation.eventDate).toLocaleDateString()}</h1>
-      <h1>Number of guests: {reservation.guestCount}</h1>
-      <h1>Package: {reservation.selectedPackage}</h1>
-      Total Price:{" "}{reservation.selectedPackage === "classic" ? classicPackagePrice : vintagePackagePrice}
+        <h1>Event Date: {new Date(reservation.eventDate).toLocaleDateString()}</h1>
+        <h1>Number of guests: {reservation.guestCount}</h1>
+        <h1>Package: {reservation.selectedPackage}</h1>
+        Total Price:{" "}{reservation.selectedPackage === "classic" ? classicPackagePrice : vintagePackagePrice}
 
-      <Button type="submit">Save Changes</Button>
+        <Button type="button" onClick={() => setIsConfirmOpen(true)}>
+          Save Changes
+        </Button>
+
       </form>
+      <ConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        onConfirm={async () => {
+          await toast.promise(
+            async () => {
+              await form.handleSubmit(onSubmit)()
+              setIsConfirmOpen(false)
+            },
+            {
+              loading: "Updating reservation...",
+              success: "Reservation updated successfully.",
+              error: "Failed to update reservation.",
+              position: "top-center",
+            }
+          )
+        }}
+
+      />
+
+
     </>
   )
 }
