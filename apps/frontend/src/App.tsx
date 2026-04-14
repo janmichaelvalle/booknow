@@ -26,7 +26,8 @@ function App() {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      <main className="mx-auto min-h-screen w-full max-w-md bg-background">
+      <main className="mx-auto min-h-screen w-full max-w-md bg-muted/30">
+
     <Routes>
       <Route path="/:businessSlug" element={<QuotationPage />}/>
       <Route path="/:businessSlug/reservation/:reservationId" element={<ReservationPage />} />

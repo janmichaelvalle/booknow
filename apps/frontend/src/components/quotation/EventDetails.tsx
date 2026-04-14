@@ -1,28 +1,26 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-import { Button } from "../ui/button"
-import { Calendar } from "../ui/calendar"
+
 import { Field, FieldLabel, FieldError } from "../ui/field"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+
 
 import { Input } from "@/components/ui/input"
-import * as React from "react"
 import { Controller } from "react-hook-form"
 import type { Control } from "react-hook-form"
 import { DateTimeSlotPicker } from "./DateTimeSlotPicker"
+import { CalendarDays, MapPin, Users } from "lucide-react"
+
 
 
 type FormValues = {
   eventDate: Date
   startTime: string
   endTime: string
+  venue: string
   guestCount: number
   selectedPackage: "classic" | "vintage"
 }
+
 
 type EventDetailsProps = {
   control: Control<FormValues>
@@ -30,7 +28,6 @@ type EventDetailsProps = {
 
 
 export function EventDetails({ control }: EventDetailsProps) {
-  const [open, setOpen] = React.useState(false)
 
   return (
 
@@ -40,8 +37,42 @@ export function EventDetails({ control }: EventDetailsProps) {
         <CardDescription>Tell us about your event</CardDescription>
 
       </CardHeader>
-      <CardContent>
-            <DateTimeSlotPicker/>
+      <CardContent className="space-y-5">
+
+        <Field>
+          <FieldLabel className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Date and Time
+          </FieldLabel>
+
+          <p className="text-sm text-muted-foreground">
+            Choose your preferred event date and available time slot.
+          </p>
+          <DateTimeSlotPicker />
+        </Field>
+
+        <Controller
+          name="venue"
+          control={control}
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.invalid}>
+              <FieldLabel htmlFor="venue" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" />
+                Venue
+              </FieldLabel>
+
+              <Input
+                id="venue"
+                placeholder="Enter venue"
+                value={field.value ?? ""}
+                onChange={field.onChange}
+              />
+              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+            </Field>
+          )}
+        />
+
+
         {/* <Controller
           name="eventDate"
           control={control}
@@ -81,7 +112,11 @@ export function EventDetails({ control }: EventDetailsProps) {
           control={control}
           render={({ field, fieldState }) => (
             <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="guestCount">Number of Guests</FieldLabel>
+              <FieldLabel htmlFor="guestCount" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Number of Guests
+              </FieldLabel>
+
               <Input
                 id="guestCount"
                 type="number"
@@ -116,7 +151,7 @@ export function EventDetails({ control }: EventDetailsProps) {
             </Field>
           )}
         /> */}
-{/* 
+        {/* 
         <Controller
           name="endTime"
           control={control}
@@ -134,7 +169,7 @@ export function EventDetails({ control }: EventDetailsProps) {
             </Field>
           )}
         /> */}
-    
+
 
 
 

@@ -12,52 +12,61 @@ export function DateTimeSlotPicker() {
     const [time, setTime] = useState<string | null>(null)
 
     // Mock time slots data
-    const timeSlots = [
-        { available: false, time: "09:00" },
-        { available: false, time: "09:30" },
-        { available: true, time: "10:00" },
-        { available: true, time: "10:30" },
-        { available: true, time: "11:00" },
-        { available: true, time: "11:30" },
-        { available: false, time: "12:00" },
-        { available: true, time: "12:30" },
-        { available: true, time: "13:00" },
-        { available: true, time: "13:30" },
-        { available: true, time: "14:00" },
-        { available: false, time: "14:30" },
-        { available: false, time: "15:00" },
-        { available: true, time: "15:30" },
-        { available: true, time: "16:00" },
-        { available: true, time: "16:30" },
-        { available: true, time: "17:00" },
-        { available: true, time: "17:30" },
-    ]
+  const timeSlots = [
+  { available: false, time: "11:00 AM" },
+  { available: false, time: "11:30 AM" },
+  { available: false, time: "12:00 PM" },
+  { available: true, time: "12:30 PM" },
+  { available: true, time: "1:00 PM" },
+  { available: true, time: "1:30 PM" },
+  { available: true, time: "2:00 PM" },
+  { available: true, time: "2:30 PM" },
+  { available: true, time: "3:00 PM" },
+  { available: true, time: "3:30 PM" },
+  { available: true, time: "4:00 PM" },
+  { available: true, time: "4:30 PM" },
+  { available: true, time: "5:00 PM" },
+  { available: true, time: "5:30 PM" },
+  { available: true, time: "6:00 PM" },
+  { available: true, time: "6:30 PM" },
+  { available: true, time: "7:00 PM" },
+  { available: true, time: "7:30 PM" },
+  { available: false, time: "8:00 PM" },
+  { available: false, time: "8:30 PM" },
+  { available: true, time: "9:00 PM" },
+  { available: true, time: "9:30 PM" },
+]
+
+
 
     return (
-        <Card className="p-0">
+        <Card className="w-full p-0">
             <CardContent className="p-0">
-                <div className="flex max-sm:flex-col">
-                    <Calendar
-                        disabled={[{ before: today }]}
-                        mode="single"
-                        onSelect={(newDate) => {
-                            if (newDate) {
-                                setDate(newDate)
-                                setTime(null)
-                            }
-                        }}
-                        selected={date}
-                    />
-                    <div className="relative w-full max-sm:h-48 sm:w-40">
-                        <div className="absolute inset-0 py-4 max-sm:border-t">
-                            <ScrollArea className="h-full sm:border-s">
+                <div className="flex flex-col">
+                    <div className="flex justify-center">
+                        <Calendar
+                            disabled={[{ before: today }]}
+                            mode="single"
+                            onSelect={(newDate) => {
+                                if (newDate) {
+                                    setDate(newDate)
+                                    setTime(null)
+                                }
+                            }}
+                            selected={date}
+                            className="w-full"
+                        />
+                    </div>
+                    <div className="border-t">
+               
+                            <div className="py-4">
                                 <div className="space-y-3">
-                                    <div className="flex h-5 shrink-0 items-center px-5">
+                                    <div className="flex h-5 shrink-0 items-center px-4">
                                         <p className="text-sm font-medium">
                                             {format(date, "EEEE, d")}
                                         </p>
                                     </div>
-                                    <div className="grid gap-1.5 px-5 max-sm:grid-cols-2">
+                                    <div className="grid grid-cols-2 gap-1.5 px-4">
                                         {timeSlots.map(({ time: timeSlot, available }) => (
                                             <Button
                                                 className="w-full"
@@ -72,8 +81,8 @@ export function DateTimeSlotPicker() {
                                         ))}
                                     </div>
                                 </div>
-                            </ScrollArea>
-                        </div>
+                            </div>
+                    
                     </div>
                 </div>
             </CardContent>

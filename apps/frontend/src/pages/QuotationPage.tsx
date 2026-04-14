@@ -15,6 +15,7 @@ const quotationSchema = z.object({
   eventDate: z.date(),
   startTime: z.string().min(1, "Start time is required"),
   endTime: z.string().min(1, "End time is required"),
+  venue: z.string().min(1, "Venue is required"),
   guestCount: z.number().int().min(1, "Guest count must be at least 1"),
   selectedPackage: z.enum(["classic", "vintage"]),
 })
@@ -35,9 +36,11 @@ export function QuotationPage() {
       eventDate: undefined,
       startTime: "",
       endTime: "",
+      venue: "",
       guestCount: undefined,
       selectedPackage: "classic",
     },
+
   })
 
 
@@ -70,9 +73,13 @@ export function QuotationPage() {
 
     const payload = {
       eventDate: data.eventDate.toISOString(),
+      startTime: data.startTime,
+      endTime: data.endTime,
+      venue: data.venue,
       guestCount: data.guestCount,
       selectedPackage: data.selectedPackage,
     }
+
 
     const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation`, {
       method: "POST",
@@ -101,7 +108,7 @@ export function QuotationPage() {
   return (
     <>
       <h1>This is the quotation page</h1>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <EventDetails
           control={form.control}
         />
