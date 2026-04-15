@@ -3,11 +3,12 @@ import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { Button } from "@/components/ui/button"
 
 import * as z from "zod"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useForm } from "react-hook-form"
 import { useNavigate, useLocation, useParams } from "react-router-dom"
 import { useEffect } from "react";
 import { type QuotationValues } from "@/lib/types"
+import { useForm } from "@tanstack/react-form"
+
+
 
 
 // The quotationSchema validates the user inputs
@@ -22,6 +23,7 @@ const quotationSchema = z.object({
 
 
 
+
 export function QuotationPage() {
 
   const navigate = useNavigate()
@@ -30,17 +32,60 @@ export function QuotationPage() {
 
   const incoming = location.state as QuotationValues | undefined   // This is the values coming from reservation page when user wants to edit
 
-  const form = useForm<z.infer<typeof quotationSchema>>({
-    resolver: zodResolver(quotationSchema),
-    defaultValues: {
-      eventDate: undefined,
-      startTime: "",
-      endTime: "",
-      venue: "",
-      guestCount: undefined,
-      selectedPackage: "classic",
-    },
+  const defaultValues: QuotationValues = {
+    eventDate: undefined,
+    startTime: "",
+    endTime: "",
+    venue: "",
+    guestCount: undefined,
+    selectedPackage: "classic",
+  }
 
+
+  const form = useForm({
+    defaultValues: defaultValues,
+    validators: {
+      onChange: quotationSchema,
+    },
+    onSubmit: async ({ value }) => {
+      if (!businessSlug) {
+        console.error("Business slug is missing from the URL")
+        return
+      }
+
+      const payload = {
+        eventDate: value.eventDate.toISOString(),
+        startTime: value.startTime,
+        endTime: value.endTime,
+        venue: value.venue,
+        guestCount: value.guestCount,
+        selectedPackage: value.selectedPackage,
+      }
+
+      const res = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      )
+
+      if (!res.ok) {
+        console.error("Failed to create reservation")
+        return
+      }
+
+      const json = await res.json()
+      const reservationId = json?.data?.id
+
+      if (!reservationId) {
+        console.error("Reservation ID missing in response")
+        return
+      }
+
+      navigate(`/${businessSlug}/reservation/${reservationId}`)
+    },
   })
 
 
@@ -59,50 +104,50 @@ export function QuotationPage() {
   const classicPackagePrice = form.watch("guestCount") * 50
   const vintagePackagePrice = form.watch("guestCount") * 100
 
-  async function onSubmit(data: z.infer<typeof quotationSchema>) {
+  // async function onSubmit(data: z.infer<typeof quotationSchema>) {
 
-    // const selectedPackagePrice =
-    // data.selectedPackage === "classic"
-    //   ? classicPackagePrice
-    //   : vintagePackagePrice
+  //   // const selectedPackagePrice =
+  //   // data.selectedPackage === "classic"
+  //   //   ? classicPackagePrice
+  //   //   : vintagePackagePrice
 
-    if (!businessSlug) {
-      console.error("Business slug is missing from the URL")
-      return
-    }
+  //   if (!businessSlug) {
+  //     console.error("Business slug is missing from the URL")
+  //     return
+  //   }
 
-    const payload = {
-      eventDate: data.eventDate.toISOString(),
-      startTime: data.startTime,
-      endTime: data.endTime,
-      venue: data.venue,
-      guestCount: data.guestCount,
-      selectedPackage: data.selectedPackage,
-    }
+  //   const payload = {
+  //     eventDate: data.eventDate.toISOString(),
+  //     startTime: data.startTime,
+  //     endTime: data.endTime,
+  //     venue: data.venue,
+  //     guestCount: data.guestCount,
+  //     selectedPackage: data.selectedPackage,
+  //   }
 
 
-    const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
+  //   const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation`, {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify(payload)
+  //   })
 
-    if (!res.ok) {
-      console.error("Failed to create reservation")
-      return
-    }
+  //   if (!res.ok) {
+  //     console.error("Failed to create reservation")
+  //     return
+  //   }
 
-    const json = await res.json()
-    const reservationId = json?.data?.id
+  //   const json = await res.json()
+  //   const reservationId = json?.data?.id
 
-    if (!reservationId) {
-      console.error("Reservation ID missing in response")
-      return
-    }
+  //   if (!reservationId) {
+  //     console.error("Reservation ID missing in response")
+  //     return
+  //   }
 
-    navigate(`/${businessSlug}/reservation/${reservationId}`)
+  //   navigate(`/${businessSlug}/reservation/${reservationId}`)
 
-  }
+  // }
 
 
   return (

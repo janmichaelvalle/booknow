@@ -1,8 +1,10 @@
 export type QuotationValues = {
-    eventDate: Date
-    guestCount: number
-    selectedPackage: "classic" | "vintage"
-    selectedPackagePrice: number
+  eventDate: Date | undefined
+  startTime: string
+  endTime: string
+  venue: string
+  guestCount: number | undefined
+  selectedPackage: "classic" | "vintage"
 }
 
 
