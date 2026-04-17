@@ -3,12 +3,9 @@ import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { Button } from "@/components/ui/button"
 
 import * as z from "zod"
-import { useNavigate, useLocation, useParams } from "react-router-dom"
-import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom"
 import { type QuotationValues } from "@/lib/types"
 import { useForm } from "@tanstack/react-form"
-
-
 
 
 // The quotationSchema validates the user inputs
@@ -22,15 +19,10 @@ const quotationSchema = z.object({
 })
 
 
-
-
 export function QuotationPage() {
 
   const navigate = useNavigate()
-  const location = useLocation()
   const { businessSlug } = useParams()
-
-  const incoming = location.state as QuotationValues | undefined   // This is the values coming from reservation page when user wants to edit
 
   const defaultValues: QuotationValues = {
     eventDate: undefined,
@@ -42,14 +34,22 @@ export function QuotationPage() {
   }
 
 
+
   const form = useForm({
+    // Inital form state
     defaultValues: defaultValues,
+    // Everytime a form values changes, checks the quotationSchema
     validators: {
       onChange: quotationSchema,
     },
     onSubmit: async ({ value }) => {
       if (!businessSlug) {
         console.error("Business slug is missing from the URL")
+        return
+      }
+
+      if (!value.eventDate) {
+        console.error("Event date is required")
         return
       }
 
@@ -88,91 +88,43 @@ export function QuotationPage() {
     },
   })
 
+  const guestCount = form.state.values.guestCount ?? 0
 
-  useEffect(() => {
-    if (incoming) {
-      form.reset({
-        eventDate: new Date(incoming.eventDate),
-        guestCount: incoming.guestCount,
-        selectedPackage: incoming.selectedPackage,
-      })
-    }
-  }, [incoming, form])
+  const classicPackagePrice = guestCount * 50
+  const vintagePackagePrice = guestCount * 100
 
-
-
-  const classicPackagePrice = form.watch("guestCount") * 50
-  const vintagePackagePrice = form.watch("guestCount") * 100
-
-  // async function onSubmit(data: z.infer<typeof quotationSchema>) {
-
-  //   // const selectedPackagePrice =
-  //   // data.selectedPackage === "classic"
-  //   //   ? classicPackagePrice
-  //   //   : vintagePackagePrice
-
-  //   if (!businessSlug) {
-  //     console.error("Business slug is missing from the URL")
-  //     return
-  //   }
-
-  //   const payload = {
-  //     eventDate: data.eventDate.toISOString(),
-  //     startTime: data.startTime,
-  //     endTime: data.endTime,
-  //     venue: data.venue,
-  //     guestCount: data.guestCount,
-  //     selectedPackage: data.selectedPackage,
-  //   }
-
-
-  //   const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation`, {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify(payload)
-  //   })
-
-  //   if (!res.ok) {
-  //     console.error("Failed to create reservation")
-  //     return
-  //   }
-
-  //   const json = await res.json()
-  //   const reservationId = json?.data?.id
-
-  //   if (!reservationId) {
-  //     console.error("Reservation ID missing in response")
-  //     return
-  //   }
-
-  //   navigate(`/${businessSlug}/reservation/${reservationId}`)
-
-  // }
+  const values = form.state.values
 
 
   return (
     <>
       <h1>This is the quotation page</h1>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <EventDetails
-          control={form.control}
-        />
-        <PackageDetails
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          form.handleSubmit()
+        }}
+        className="space-y-6"
+      >
+        <EventDetails form={form} />
+
+        {/* <PackageDetails
           control={form.control}
           classicPackagePrice={classicPackagePrice}
           vintagePackagePrice={vintagePackagePrice}
-        />
+        /> */}
 
         <h1>Summary</h1>
         <p>
           Event date:{" "}
-          {form.watch("eventDate") ? form.watch("eventDate").toLocaleDateString() : "Not selected"}
+          {values.eventDate ? values.eventDate.toLocaleDateString() : "Not selected"}
         </p>
-        <p>Guests: {form.watch("guestCount")}</p>
-        <p>Package: {form.watch("selectedPackage") || "None selected"}</p>
+        <p>Guests: {values.guestCount}</p>
+        <p>Package: {values.selectedPackage || "None selected"}</p>
         <p>
-          {(form.watch("guestCount") ?? 0) &&
-            (form.watch("selectedPackage") === "classic"
+          {(guestCount ?? 0) &&
+            (values.selectedPackage === "classic"
               ? classicPackagePrice
               : vintagePackagePrice)}
         </p>

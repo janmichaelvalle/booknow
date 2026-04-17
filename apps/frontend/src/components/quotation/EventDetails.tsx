@@ -6,7 +6,6 @@ import { Field, FieldLabel, FieldError } from "../ui/field"
 
 import { Input } from "@/components/ui/input"
 import { Controller } from "react-hook-form"
-import type { Control } from "react-hook-form"
 import { DateTimeSlotPicker } from "./DateTimeSlotPicker"
 import { CalendarDays, MapPin, Users } from "lucide-react"
 
@@ -23,11 +22,11 @@ type FormValues = {
 
 
 type EventDetailsProps = {
-  control: Control<FormValues>
+  form: any
 }
 
 
-export function EventDetails({ control }: EventDetailsProps) {
+export function EventDetails({ form }: EventDetailsProps) {
 
   return (
 
@@ -51,124 +50,58 @@ export function EventDetails({ control }: EventDetailsProps) {
           <DateTimeSlotPicker />
         </Field>
 
-        <Controller
+        <form.Field
           name="venue"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="venue" className="flex items-center gap-2">
+          children={(field) => (
+            <Field data-invalid={!field.state.meta.isValid && field.state.meta.isTouched}>
+              <FieldLabel htmlFor={field.name} className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
                 Venue
               </FieldLabel>
 
               <Input
-                id="venue"
+                id={field.name}
                 placeholder="Enter venue"
-                value={field.value ?? ""}
-                onChange={field.onChange}
+                value={field.state.value ?? ""}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(e.target.value)}
               />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+
+              {field.state.meta.isTouched && field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
             </Field>
           )}
         />
-
-
-        {/* <Controller
-          name="eventDate"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Field>
-              <FieldLabel htmlFor="date"> Event Date</FieldLabel>
-              <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    id="date"
-                    className="justify-start font-normal"
-                  >
-                    {field.value ? field.value.toLocaleDateString() : "Select date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto overflow-hidden p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.value}
-                    defaultMonth={field.value}
-                    captionLayout="dropdown"
-                    onSelect={(date) => {
-                      field.onChange(date)
-                      setOpen(false) // Close popover after date pick
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-
-        /> */}
-        <Controller
+        <form.Field
           name="guestCount"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="guestCount" className="flex items-center gap-2">
+          children={(field) => (
+            <Field data-invalid={!field.state.meta.isValid && field.state.meta.isTouched}>
+              <FieldLabel htmlFor={field.name} className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Number of Guests
               </FieldLabel>
 
               <Input
-                id="guestCount"
+                id={field.name}
                 type="number"
                 min={1}
                 placeholder="Input number of guests"
-                value={field.value ?? ""}
+                value={field.state.value ?? ""}
+                onBlur={field.handleBlur}
                 onChange={(e) => {
                   const raw = e.target.value
                   const num = raw === "" ? undefined : Number(raw)
-                  // If user entered 0 or negative, force it to 1.
-                  field.onChange(num !== undefined && num < 1 ? 1 : num)
+                  field.handleChange(num !== undefined && num < 1 ? 1 : num)
                 }}
               />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
+
+              {field.state.meta.isTouched && field.state.meta.errors.length > 0 && (
+                <FieldError errors={field.state.meta.errors} />
+              )}
             </Field>
           )}
         />
-        {/* <Controller
-          name="startTime"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="startTime">Start Time</FieldLabel>
-              <Input
-                id="startTime"
-                type="time"
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-              />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        /> */}
-        {/* 
-        <Controller
-          name="endTime"
-          control={control}
-          render={({ field, fieldState }) => (
-            <Field data-invalid={fieldState.invalid}>
-              <FieldLabel htmlFor="endTime">End Time</FieldLabel>
-              <Input
-                id="endTime"
-                type="time"
-                value={field.value ?? ""}
-                onChange={field.onChange}
-                className="appearance-none bg-background [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
-              />
-              {fieldState.error && <FieldError errors={[fieldState.error]} />}
-            </Field>
-          )}
-        /> */}
 
 
 

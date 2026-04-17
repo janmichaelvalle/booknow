@@ -7,6 +7,9 @@ create table if not exists public.reservations (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references public.businesses(id),
   event_date timestamptz not null,
+  start_time text not null,
+  end_time text not null,
+  venue text not null,
   guest_count integer not null check (guest_count > 0),
   selected_package text not null check (selected_package in ('classic', 'vintage')),
   status text not null default 'pending_acceptance' check (
