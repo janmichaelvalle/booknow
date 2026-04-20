@@ -95,6 +95,12 @@ export function QuotationPage() {
 
   const values = form.state.values
 
+  console.log("guestCount:", guestCount)
+  console.log("classicPackagePrice:", classicPackagePrice)
+  console.log("vintagePackagePrice:", vintagePackagePrice)
+  console.log("form values:", form.state.values)
+
+
 
   return (
     <>
@@ -109,11 +115,11 @@ export function QuotationPage() {
       >
         <EventDetails form={form} />
 
-        {/* <PackageDetails
-          control={form.control}
+        <PackageDetails
+          form={form}
           classicPackagePrice={classicPackagePrice}
           vintagePackagePrice={vintagePackagePrice}
-        /> */}
+        />
 
         <h1>Summary</h1>
         <p>

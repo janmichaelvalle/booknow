@@ -5,20 +5,9 @@ import { Field, FieldLabel, FieldError } from "../ui/field"
 
 
 import { Input } from "@/components/ui/input"
-import { Controller } from "react-hook-form"
 import { DateTimeSlotPicker } from "./DateTimeSlotPicker"
 import { CalendarDays, MapPin, Users } from "lucide-react"
 
-
-
-type FormValues = {
-  eventDate: Date
-  startTime: string
-  endTime: string
-  venue: string
-  guestCount: number
-  selectedPackage: "classic" | "vintage"
-}
 
 
 type EventDetailsProps = {
@@ -52,7 +41,8 @@ export function EventDetails({ form }: EventDetailsProps) {
 
         <form.Field
           name="venue"
-          children={(field) => (
+          // Tanstack has a field object to help you control input
+          children={(field: any) => (
             <Field data-invalid={!field.state.meta.isValid && field.state.meta.isTouched}>
               <FieldLabel htmlFor={field.name} className="flex items-center gap-2">
                 <MapPin className="h-4 w-4" />
@@ -62,6 +52,7 @@ export function EventDetails({ form }: EventDetailsProps) {
               <Input
                 id={field.name}
                 placeholder="Enter venue"
+                // Actual value of the field
                 value={field.state.value ?? ""}
                 onBlur={field.handleBlur}
                 onChange={(e) => field.handleChange(e.target.value)}
@@ -75,8 +66,9 @@ export function EventDetails({ form }: EventDetailsProps) {
         />
         <form.Field
           name="guestCount"
-          children={(field) => (
+          children={(field: any) => (
             <Field data-invalid={!field.state.meta.isValid && field.state.meta.isTouched}>
+              
               <FieldLabel htmlFor={field.name} className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
                 Number of Guests
@@ -92,6 +84,10 @@ export function EventDetails({ form }: EventDetailsProps) {
                 onChange={(e) => {
                   const raw = e.target.value
                   const num = raw === "" ? undefined : Number(raw)
+                  console.log("raw:", raw)
+                  console.log("num:", num)
+                  console.log("guestCount onChange fired", e.target.value)
+                  console.log("field value before change", field.state.value)
                   field.handleChange(num !== undefined && num < 1 ? 1 : num)
                 }}
               />
@@ -102,9 +98,6 @@ export function EventDetails({ form }: EventDetailsProps) {
             </Field>
           )}
         />
-
-
-
 
       </CardContent>
 
