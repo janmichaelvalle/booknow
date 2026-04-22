@@ -88,17 +88,8 @@ export function QuotationPage() {
     },
   })
 
-  const guestCount = form.state.values.guestCount ?? 0
 
-  const classicPackagePrice = guestCount * 50
-  const vintagePackagePrice = guestCount * 100
 
-  const values = form.state.values
-
-  console.log("guestCount:", guestCount)
-  console.log("classicPackagePrice:", classicPackagePrice)
-  console.log("vintagePackagePrice:", vintagePackagePrice)
-  console.log("form values:", form.state.values)
 
 
 
@@ -114,27 +105,42 @@ export function QuotationPage() {
         className="space-y-6"
       >
         <EventDetails form={form} />
+        {/* form.Subscribe watches part of the TanStack form state.
+        The selector receives the full form state and returns only state.values,
+        so this UI re-renders when the form values change. */}
+        <form.Subscribe selector={(state) => state.values}>
+        {(values) => {
+          const guestCount = values.guestCount ?? 0
+          const classicPackagePrice = guestCount * 50
+          const vintagePackagePrice = guestCount * 100
 
-        <PackageDetails
-          form={form}
-          classicPackagePrice={classicPackagePrice}
-          vintagePackagePrice={vintagePackagePrice}
-        />
+          return (
+            <>
+              <PackageDetails
+                form={form}
+                classicPackagePrice={classicPackagePrice}
+                vintagePackagePrice={vintagePackagePrice}
+              />
 
-        <h1>Summary</h1>
-        <p>
-          Event date:{" "}
-          {values.eventDate ? values.eventDate.toLocaleDateString() : "Not selected"}
-        </p>
-        <p>Guests: {values.guestCount}</p>
-        <p>Package: {values.selectedPackage || "None selected"}</p>
-        <p>
-          {(guestCount ?? 0) &&
-            (values.selectedPackage === "classic"
-              ? classicPackagePrice
-              : vintagePackagePrice)}
-        </p>
-
+              <h1>Summary</h1>
+              <p>
+                Event date:{" "}
+                {values.eventDate
+                  ? values.eventDate.toLocaleDateString()
+                  : "Not selected"}
+              </p>
+              <p>
+                Event time:{" "}
+                {values.startTime
+                  ? values.startTime
+                  : "Not selected"}
+              </p>
+              <p>Guests: {values.guestCount}</p>
+              <p>Package: {values.selectedPackage || "None selected"}</p>
+            </>
+          )
+        }}
+      </form.Subscribe>
         <Button type="submit">Generate Quotation</Button>
       </form>
     </>

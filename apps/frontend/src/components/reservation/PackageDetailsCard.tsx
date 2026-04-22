@@ -8,7 +8,6 @@ import {
 
 
 
-
 type EventDetailsCardProps = {
     packagePrice: number,
     selectedPackage: string
@@ -18,7 +17,6 @@ type EventDetailsCardProps = {
 
 
 export function PackageDetailsCard({ packagePrice, selectedPackage }: EventDetailsCardProps) {
-
 
     return (
         <>

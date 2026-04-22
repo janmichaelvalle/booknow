@@ -36,7 +36,7 @@ export function EventDetails({ form }: EventDetailsProps) {
           <p className="text-sm text-muted-foreground">
             Choose your preferred event date and available time slot.
           </p>
-          <DateTimeSlotPicker />
+          <DateTimeSlotPicker form={form} />
         </Field>
 
         <form.Field
