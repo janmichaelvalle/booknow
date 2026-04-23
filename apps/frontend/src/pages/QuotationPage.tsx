@@ -1,5 +1,6 @@
 import { EventDetails } from "@/components/quotation/EventDetails";
 import { PackageDetails } from "@/components/quotation/PackageDetails"
+import { AddOns } from "@/components/quotation/AddOns";
 import { Button } from "@/components/ui/button"
 
 import * as z from "zod"
@@ -113,6 +114,8 @@ export function QuotationPage() {
           const guestCount = values.guestCount ?? 0
           const classicPackagePrice = guestCount * 50
           const vintagePackagePrice = guestCount * 100
+          const totalShooters = guestCount * 5
+          const totalCocktails = guestCount * 2
 
           return (
             <>
@@ -120,8 +123,11 @@ export function QuotationPage() {
                 form={form}
                 classicPackagePrice={classicPackagePrice}
                 vintagePackagePrice={vintagePackagePrice}
+                totalShooters = {totalShooters}
+                totalCocktails = {totalCocktails}
               />
-
+              <AddOns
+              />
               <h1>Summary</h1>
               <p>
                 Event date:{" "}

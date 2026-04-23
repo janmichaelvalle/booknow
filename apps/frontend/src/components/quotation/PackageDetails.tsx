@@ -3,25 +3,30 @@ import { Field, FieldContent, FieldDescription, FieldGroup, FieldLabel, FieldSet
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Badge } from "@/components/ui/badge"
+import { Martini, GlassWater } from "lucide-react"
 
 
 type PackageDetailsProps = {
   classicPackagePrice: number
   vintagePackagePrice: number
+  totalShooters: number
+   totalCocktails: number
   form: any
 }
 
 
-export function PackageDetails({ classicPackagePrice, vintagePackagePrice, form }: PackageDetailsProps) {
+export function PackageDetails({ classicPackagePrice, vintagePackagePrice, totalShooters, totalCocktails, form }: PackageDetailsProps) {
   return (
 
     <>
       <Card>
         <CardHeader>
           <CardTitle>Select Package</CardTitle>
-          <CardDescription>Choose the perfect package for your event</CardDescription>
+          <CardDescription>Every package includes 4 hours open bar, bartenders, and LED bar counter.</CardDescription>
         </CardHeader>
         <CardContent>
+          
           <form.Field name="selectedPackage">
             {(field: any) => (
               <FieldGroup>
@@ -44,9 +49,12 @@ export function PackageDetails({ classicPackagePrice, vintagePackagePrice, form 
                               ₱ {classicPackagePrice > 0 ? classicPackagePrice : 0}
                             </FieldTitle>
                           </div>
-                          <FieldDescription>
-                            Glassware: Shot Glasses
-                          </FieldDescription>
+                        
+                            <Badge variant="default">
+                               <GlassWater data-icon="inline-start" />
+                               5 shooters per guest 
+                            </Badge>
+                         
                           <FieldDescription>
                             Best for debuts, birthdays, and college parties
                           </FieldDescription>
@@ -70,7 +78,11 @@ export function PackageDetails({ classicPackagePrice, vintagePackagePrice, form 
                             </FieldTitle>
                           </div>
                           <FieldDescription>
-                            Glassware: Cocktail Glasses
+                            <Badge variant="default">
+                               <Martini data-icon="inline-start" />
+                              2 cocktails per guest
+                              </Badge>
+                      
                           </FieldDescription>
                           <FieldDescription>
                             Perfect for wedding and corporate events.
