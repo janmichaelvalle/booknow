@@ -10,13 +10,11 @@ import { Martini, GlassWater } from "lucide-react"
 type PackageDetailsProps = {
   classicPackagePrice: number
   vintagePackagePrice: number
-  totalShooters: number
-   totalCocktails: number
   form: any
 }
 
 
-export function PackageDetails({ classicPackagePrice, vintagePackagePrice, totalShooters, totalCocktails, form }: PackageDetailsProps) {
+export function PackageDetails({ classicPackagePrice, vintagePackagePrice, form }: PackageDetailsProps) {
   return (
 
     <>
@@ -26,7 +24,7 @@ export function PackageDetails({ classicPackagePrice, vintagePackagePrice, total
           <CardDescription>Every package includes 4 hours open bar, bartenders, and LED bar counter.</CardDescription>
         </CardHeader>
         <CardContent>
-          
+
           <form.Field name="selectedPackage">
             {(field: any) => (
               <FieldGroup>
@@ -46,15 +44,16 @@ export function PackageDetails({ classicPackagePrice, vintagePackagePrice, total
                             <FieldTitle>Classic Package</FieldTitle>
 
                             <FieldTitle>
-                              ₱ {classicPackagePrice > 0 ? classicPackagePrice : 0}
+                              ₱ {(classicPackagePrice > 0 ? classicPackagePrice : 0).toLocaleString()}
                             </FieldTitle>
+
                           </div>
-                        
-                            <Badge variant="default">
-                               <GlassWater data-icon="inline-start" />
-                               5 shooters per guest 
-                            </Badge>
-                         
+
+                          <Badge variant="default">
+                            <GlassWater data-icon="inline-start" />
+                            5 shooters per guest
+                          </Badge>
+
                           <FieldDescription>
                             Best for debuts, birthdays, and college parties
                           </FieldDescription>
@@ -74,15 +73,15 @@ export function PackageDetails({ classicPackagePrice, vintagePackagePrice, total
                             <FieldTitle>Vintage Package</FieldTitle>
 
                             <FieldTitle>
-                              ₱ {vintagePackagePrice > 0 ? vintagePackagePrice : 0}
+                              ₱ {(vintagePackagePrice > 0 ? vintagePackagePrice : 0).toLocaleString()}
                             </FieldTitle>
                           </div>
                           <FieldDescription>
                             <Badge variant="default">
-                               <Martini data-icon="inline-start" />
+                              <Martini data-icon="inline-start" />
                               2 cocktails per guest
-                              </Badge>
-                      
+                            </Badge>
+
                           </FieldDescription>
                           <FieldDescription>
                             Perfect for wedding and corporate events.

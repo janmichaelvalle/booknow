@@ -1,6 +1,7 @@
 import { EventDetails } from "@/components/quotation/EventDetails";
 import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { AddOns } from "@/components/quotation/AddOns";
+import { SummaryDetails } from "@/components/quotation/SummaryDetails";
 import { Button } from "@/components/ui/button"
 
 import * as z from "zod"
@@ -90,10 +91,6 @@ export function QuotationPage() {
   })
 
 
-
-
-
-
   return (
     <>
       <h1>This is the quotation page</h1>
@@ -110,43 +107,49 @@ export function QuotationPage() {
         The selector receives the full form state and returns only state.values,
         so this UI re-renders when the form values change. */}
         <form.Subscribe selector={(state) => state.values}>
-        {(values) => {
-          const guestCount = values.guestCount ?? 0
-          const classicPackagePrice = guestCount * 50
-          const vintagePackagePrice = guestCount * 100
-          const totalShooters = guestCount * 5
-          const totalCocktails = guestCount * 2
+          {(values) => {
+            const guestCount = values.guestCount ?? 0
+            const classicPackagePrice = guestCount * 50
+            const vintagePackagePrice = guestCount * 100
+            const basePrice =
+              values.selectedPackage === "classic"
+                ? classicPackagePrice
+                : vintagePackagePrice
 
-          return (
-            <>
-              <PackageDetails
-                form={form}
-                classicPackagePrice={classicPackagePrice}
-                vintagePackagePrice={vintagePackagePrice}
-                totalShooters = {totalShooters}
-                totalCocktails = {totalCocktails}
-              />
-              <AddOns
-              />
-              <h1>Summary</h1>
-              <p>
-                Event date:{" "}
-                {values.eventDate
-                  ? values.eventDate.toLocaleDateString()
-                  : "Not selected"}
-              </p>
-              <p>
-                Event time:{" "}
-                {values.startTime
-                  ? values.startTime
-                  : "Not selected"}
-              </p>
-              <p>Guests: {values.guestCount}</p>
-              <p>Package: {values.selectedPackage || "None selected"}</p>
-            </>
-          )
-        }}
-      </form.Subscribe>
+
+            return (
+              <>
+                <PackageDetails
+                  form={form}
+                  classicPackagePrice={classicPackagePrice}
+                  vintagePackagePrice={vintagePackagePrice}
+
+                />
+                <AddOns
+                />
+                <SummaryDetails
+                  basePrice={basePrice}
+                  addOnsPrice={2500}
+                />
+                <h1>Summary</h1>
+                <p>
+                  Event date:{" "}
+                  {values.eventDate
+                    ? values.eventDate.toLocaleDateString()
+                    : "Not selected"}
+                </p>
+                <p>
+                  Event time:{" "}
+                  {values.startTime
+                    ? values.startTime
+                    : "Not selected"}
+                </p>
+                <p>Guests: {values.guestCount}</p>
+                <p>Package: {values.selectedPackage || "None selected"}</p>
+              </>
+            )
+          }}
+        </form.Subscribe>
         <Button type="submit">Generate Quotation</Button>
       </form>
     </>
