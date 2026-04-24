@@ -131,21 +131,7 @@ export function QuotationPage() {
                   basePrice={basePrice}
                   addOnsPrice={2500}
                 />
-                <h1>Summary</h1>
-                <p>
-                  Event date:{" "}
-                  {values.eventDate
-                    ? values.eventDate.toLocaleDateString()
-                    : "Not selected"}
-                </p>
-                <p>
-                  Event time:{" "}
-                  {values.startTime
-                    ? values.startTime
-                    : "Not selected"}
-                </p>
-                <p>Guests: {values.guestCount}</p>
-                <p>Package: {values.selectedPackage || "None selected"}</p>
+                
               </>
             )
           }}
