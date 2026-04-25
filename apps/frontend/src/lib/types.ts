@@ -33,3 +33,31 @@ export type PaymentMethod = {
   instructions: string | null
   isActive: boolean
 }
+
+export type BusinessPackage = {
+  id: string
+  name: string
+  badge_text: string | null
+  description: string | null
+}
+
+export type PackagePricing = {
+  id: string
+  package_id: string
+  min_guests: number
+  max_guests: number | null
+  price_per_guest: number
+}
+
+export type AddOn = {
+  id: string
+  name: string
+  description: string | null
+  price: number
+}
+
+export type Offerings = {
+  packages: BusinessPackage[]
+  packagePricing: PackagePricing[]
+  addons: AddOn[]
+}

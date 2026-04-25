@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 
 import * as z from "zod"
 import { useNavigate, useParams } from "react-router-dom"
-import { type QuotationValues } from "@/lib/types"
+import { type Offerings, type QuotationValues } from "@/lib/types"
 import { useForm } from "@tanstack/react-form"
 
 
@@ -35,6 +35,28 @@ export function QuotationPage() {
     selectedPackage: "classic",
   }
 
+  const { data: offerings, isPending: isOfferingPending, error: offeringsError } = useQuery({
+    queryKey: ["offerings", businessSlug],
+    queryFn: async (): Promise<Offerings> => {
+      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/offerings`)
+      if (!res.ok) {
+        throw new Error("Failed to fetch offerings")
+      }
+      const data = await res.json()
+      return data.data ?? {
+        packages: [],
+        packagePricing: [],
+        addons: [],
+      }
+    },
+    enabled: !!businessSlug,
+    initialData: {
+      packages: [],
+      packagePricing: [],
+      addons: [],
+    }
+
+  })
 
 
   const form = useForm({
@@ -131,7 +153,7 @@ export function QuotationPage() {
                   basePrice={basePrice}
                   addOnsPrice={2500}
                 />
-                
+
               </>
             )
           }}

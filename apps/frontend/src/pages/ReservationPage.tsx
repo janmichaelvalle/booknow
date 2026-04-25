@@ -38,10 +38,6 @@ export function ReservationPage() {
 
 
 
-
-
-
-
     const { data: reservation, isPending: isReservationPending, error: reservationError, } = useQuery({
         queryKey: ["reservation", businessSlug, reservationId],
         queryFn: async (): Promise<Reservation> => {
