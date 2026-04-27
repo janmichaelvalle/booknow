@@ -47,7 +47,7 @@ export type PaymentMethod = {
 }
 
 // Reservation types
-export type SelectedPackage = "classic" | "vintage"
+export type SelectedPackage = string
 
 export type ReservationDbRow = {
   id: string

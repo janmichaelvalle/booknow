@@ -8,6 +8,7 @@ import * as z from "zod"
 import { useNavigate, useParams } from "react-router-dom"
 import { type Offerings, type QuotationValues } from "@/lib/types"
 import { useForm } from "@tanstack/react-form"
+import { useQuery } from "@tanstack/react-query";
 
 
 // The quotationSchema validates the user inputs
@@ -17,7 +18,7 @@ const quotationSchema = z.object({
   endTime: z.string().min(1, "End time is required"),
   venue: z.string().min(1, "Venue is required"),
   guestCount: z.number().int().min(1, "Guest count must be at least 1"),
-  selectedPackage: z.enum(["classic", "vintage"]),
+  selectedPackage: z.string().min(1, "Package is required")
 })
 
 
@@ -32,7 +33,7 @@ export function QuotationPage() {
     endTime: "",
     venue: "",
     guestCount: undefined,
-    selectedPackage: "classic",
+    selectedPackage: "",
   }
 
   const { data: offerings, isPending: isOfferingPending, error: offeringsError } = useQuery({
@@ -131,20 +132,27 @@ export function QuotationPage() {
         <form.Subscribe selector={(state) => state.values}>
           {(values) => {
             const guestCount = values.guestCount ?? 0
-            const classicPackagePrice = guestCount * 50
-            const vintagePackagePrice = guestCount * 100
-            const basePrice =
-              values.selectedPackage === "classic"
-                ? classicPackagePrice
-                : vintagePackagePrice
 
+            const selectedPricing = offerings.packagePricing.find((price) => {
+              const matchesPackage = price.package_id === values.selectedPackage
+              const matchesMinGuests = guestCount >= price.min_guests
+              const matchesMaxGuests =
+                price.max_guests === null || guestCount <= price.max_guests
+
+              return matchesPackage && matchesMinGuests && matchesMaxGuests
+            })
+
+            const basePrice = selectedPricing
+              ? guestCount * selectedPricing.price_per_guest
+              : 0
 
             return (
               <>
                 <PackageDetails
                   form={form}
-                  classicPackagePrice={classicPackagePrice}
-                  vintagePackagePrice={vintagePackagePrice}
+                  packages={offerings.packages}
+                  packagePricing={offerings.packagePricing}
+                  guestCount={guestCount}
 
                 />
                 <AddOns

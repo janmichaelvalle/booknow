@@ -4,7 +4,7 @@ export type QuotationValues = {
   endTime: string
   venue: string
   guestCount: number | undefined
-  selectedPackage: "classic" | "vintage"
+  selectedPackage: string
 }
 
 
@@ -12,7 +12,7 @@ export type Reservation = {
   id: string
   eventDate: string
   guestCount: number
-  selectedPackage: "classic" | "vintage"
+  selectedPackage: string
   reservationStatus: string,
   paymentMethodId?: string | null
   paymentProofPath?: string | null

@@ -4,18 +4,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
-import { Martini, GlassWater } from "lucide-react"
-
+import { Martini, GlassWater, MailSearch } from "lucide-react"
+import { type BusinessPackage, type PackagePricing } from "../../lib/types"
 
 type PackageDetailsProps = {
-  classicPackagePrice: number
-  vintagePackagePrice: number
+  packages: BusinessPackage[]
+  packagePricing: PackagePricing[]
+  guestCount: number
   form: any
 }
 
 
-export function PackageDetails({ classicPackagePrice, vintagePackagePrice, form }: PackageDetailsProps) {
+
+export function PackageDetails({ packages, packagePricing, guestCount, form }: PackageDetailsProps) {
+
+
   return (
+
 
     <>
       <Card>
@@ -33,63 +38,43 @@ export function PackageDetails({ classicPackagePrice, vintagePackagePrice, form 
                     value={field.state.value}
                     onValueChange={field.handleChange}
                   >
-                    <FieldLabel htmlFor="classic">
-                      <Field orientation="horizontal">
-                        <RadioGroupItem
-                          value="classic"
-                          id="classic"
-                        />
-                        <FieldContent>
-                          <div className="flex items-start justify-between gap-4">
-                            <FieldTitle>Classic Package</FieldTitle>
 
-                            <FieldTitle>
-                              ₱ {(classicPackagePrice > 0 ? classicPackagePrice : 0).toLocaleString()}
-                            </FieldTitle>
+                    {packages.map((pkg) => {
+                      const matchedPrice = packagePricing.find((price) => {
+                        const matchesPackage = price.package_id === pkg.id
+                        const matchesMinGuests = guestCount >= price.min_guests
+                        const matchesMaxGuests =
+                          price.max_guests === null || guestCount <= price.max_guests
 
-                          </div>
+                        return matchesPackage && matchesMinGuests && matchesMaxGuests
+                      })
+                      console.log("package:", pkg)
+                      console.log("matchedPrice:", matchedPrice)
 
-                          <Badge variant="default">
-                            <GlassWater data-icon="inline-start" />
-                            5 shooters per guest
-                          </Badge>
+                      return (
+                        <FieldLabel key={pkg.id} htmlFor={pkg.id}>
+                          <Field orientation="horizontal">
+                            <RadioGroupItem value={pkg.id} id={pkg.id} />
+                            <FieldContent>
+                              <div className="flex items-start justify-between gap-4">
+                                <FieldTitle>{pkg.name}</FieldTitle>
 
-                          <FieldDescription>
-                            Best for debuts, birthdays, and college parties
-                          </FieldDescription>
-                        </FieldContent>
+                                <FieldTitle>
+                                   ₱ {matchedPrice ? guestCount * matchedPrice.price_per_guest : 0}
+                                </FieldTitle>
+                              </div>
 
-                      </Field>
-                    </FieldLabel>
+                              <Badge>{pkg.badge_text}</Badge>
+                              <FieldDescription>{pkg.description}</FieldDescription>
+                            </FieldContent>
 
-                    <FieldLabel htmlFor="vintage">
-                      <Field orientation="horizontal">
-                        <RadioGroupItem
-                          value="vintage"
-                          id="vintage"
-                        />
-                        <FieldContent>
-                          <div className="flex items-start justify-between gap-4">
-                            <FieldTitle>Vintage Package</FieldTitle>
+                          </Field>
+                        </FieldLabel>
+                      )
+                    })}
 
-                            <FieldTitle>
-                              ₱ {(vintagePackagePrice > 0 ? vintagePackagePrice : 0).toLocaleString()}
-                            </FieldTitle>
-                          </div>
-                          <FieldDescription>
-                            <Badge variant="default">
-                              <Martini data-icon="inline-start" />
-                              2 cocktails per guest
-                            </Badge>
 
-                          </FieldDescription>
-                          <FieldDescription>
-                            Perfect for wedding and corporate events.
-                          </FieldDescription>
-                        </FieldContent>
 
-                      </Field>
-                    </FieldLabel>
                   </RadioGroup>
                 </FieldSet>
               </FieldGroup>
