@@ -9,6 +9,7 @@ import { useNavigate, useParams } from "react-router-dom"
 import { type Offerings, type QuotationValues } from "@/lib/types"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query";
+import { add } from "date-fns";
 
 
 // The quotationSchema validates the user inputs
@@ -18,7 +19,8 @@ const quotationSchema = z.object({
   endTime: z.string().min(1, "End time is required"),
   venue: z.string().min(1, "Venue is required"),
   guestCount: z.number().int().min(1, "Guest count must be at least 1"),
-  selectedPackage: z.string().min(1, "Package is required")
+  selectedPackage: z.string().min(1, "Package is required"),
+  selectedAddOns: z.record(z.string(), z.number())
 })
 
 
@@ -34,6 +36,7 @@ export function QuotationPage() {
     venue: "",
     guestCount: undefined,
     selectedPackage: "",
+    selectedAddOns: {}
   }
 
   const { data: offerings, isPending: isOfferingPending, error: offeringsError } = useQuery({
@@ -145,6 +148,11 @@ export function QuotationPage() {
             const basePrice = selectedPricing
               ? guestCount * selectedPricing.price_per_guest
               : 0
+            
+            const addsOnsTotal = offerings.addons.reduce((sum, addon) => {
+              const quantity = values.selectedAddOns[addon.id] ?? 0
+              return sum + addon.price * quantity
+            }, 0)
 
             return (
               <>
@@ -156,10 +164,12 @@ export function QuotationPage() {
 
                 />
                 <AddOns
+                addons = {offerings.addons}
+                form={form}
                 />
                 <SummaryDetails
                   basePrice={basePrice}
-                  addOnsPrice={2500}
+                  addOnsPrice={addsOnsTotal}
                 />
 
               </>

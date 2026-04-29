@@ -5,6 +5,9 @@ export type QuotationValues = {
   venue: string
   guestCount: number | undefined
   selectedPackage: string
+  // Record stores the add-on ID as the object key and quantity as the object value
+  selectedAddOns: Record<string, number>
+
 }
 
 

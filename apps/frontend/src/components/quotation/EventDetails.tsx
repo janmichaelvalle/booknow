@@ -157,10 +157,7 @@ export function EventDetails({ form }: EventDetailsProps) {
                 onChange={(e) => {
                   const raw = e.target.value
                   const num = raw === "" ? undefined : Number(raw)
-                  console.log("raw:", raw)
-                  console.log("num:", num)
-                  console.log("guestCount onChange fired", e.target.value)
-                  console.log("field value before change", field.state.value)
+                
                   field.handleChange(num !== undefined && num < 1 ? 1 : num)
                 }}
               />

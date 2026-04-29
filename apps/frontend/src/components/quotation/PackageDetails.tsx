@@ -38,7 +38,6 @@ export function PackageDetails({ packages, packagePricing, guestCount, form }: P
                     value={field.state.value}
                     onValueChange={field.handleChange}
                   >
-
                     {packages.map((pkg) => {
                       const matchedPrice = packagePricing.find((price) => {
                         const matchesPackage = price.package_id === pkg.id
@@ -48,8 +47,7 @@ export function PackageDetails({ packages, packagePricing, guestCount, form }: P
 
                         return matchesPackage && matchesMinGuests && matchesMaxGuests
                       })
-                      console.log("package:", pkg)
-                      console.log("matchedPrice:", matchedPrice)
+                      
 
                       return (
                         <FieldLabel key={pkg.id} htmlFor={pkg.id}>
@@ -60,7 +58,7 @@ export function PackageDetails({ packages, packagePricing, guestCount, form }: P
                                 <FieldTitle>{pkg.name}</FieldTitle>
 
                                 <FieldTitle>
-                                   ₱ {matchedPrice ? guestCount * matchedPrice.price_per_guest : 0}
+                                  ₱ {matchedPrice ? guestCount * matchedPrice.price_per_guest : 0}
                                 </FieldTitle>
                               </div>
 
