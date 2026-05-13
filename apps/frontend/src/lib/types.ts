@@ -64,3 +64,19 @@ export type Offerings = {
   packagePricing: PackagePricing[]
   addons: AddOn[]
 }
+
+export type SelectedAddOnItem= {
+  id: string
+  name: string
+  price: number
+  quantity: number
+  lineTotal: number
+}
+
+export type SelectedPackageSummary = {
+  name: string
+  pricePerGuest: number
+  guestCount: number
+  basePrice: number
+}
+
