@@ -71,6 +71,8 @@ export function QuotationPage() {
       onChange: quotationSchema,
     },
     onSubmit: async ({ value }) => {
+      console.log("Submit reached")
+      console.log(value)
       if (!businessSlug) {
         console.error("Business slug is missing from the URL")
         return
@@ -122,6 +124,7 @@ export function QuotationPage() {
       <h1>This is the quotation page</h1>
       <form
         onSubmit={(e) => {
+          console.log("Form submit event fired")
           e.preventDefault()
           e.stopPropagation()
           form.handleSubmit()

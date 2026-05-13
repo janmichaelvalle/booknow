@@ -31,7 +31,7 @@ export function SummaryDetails({
         </div>
 
         {selectedAddOnItems.map((item) => (
-          <div className="flex items-center justify-between">
+          <div key={item.id} className="flex items-center justify-between">
           <span>{item.name}</span>
           <span>{item.price.toLocaleString()} x {item.quantity} = ₱ {item.lineTotal.toLocaleString()}</span>
         </div>

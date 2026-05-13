@@ -60,7 +60,7 @@ export function AddOns({ addons, form }: AddOnsProps) {
                       min={0}
                       max={100}
                       size="sm"
-                      value={field.state.value[addon.id]}
+                       value={field.state.value[addon.id] ?? 0}
                       onValueChange={(quantity) => {
                         field.handleChange({ 
                           // ...field.state.value copies all the existing key-value pairs from the current selectedAddOns object
