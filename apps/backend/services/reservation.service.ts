@@ -53,7 +53,7 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
 
     const { data: row, error } = await supabase
         .from('reservations')
-        .select('id,guest_count,selected_package_id,start_time,end_time,venue,status,payment_method_id,payment_proof_path,rejection_reason')
+        .select('id,guest_count,selected_package_id,event_date,start_time,end_time,venue,status,payment_method_id,payment_proof_path,rejection_reason,business_packages ( id, name )')
         .eq('id', reservationId)
         .eq('business_id', businessId)
         .maybeSingle()
@@ -84,6 +84,7 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         endTime: row.end_time,
         venue: row.venue,
         guestCount: row.guest_count,
+        selectedPackageName: row.business_packages?.name ?? "",
         selectedPackageId: row.selected_package_id,
         reservationStatus: row.status,
         paymentMethodId: row.payment_method_id,

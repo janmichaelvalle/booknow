@@ -47,7 +47,7 @@ export type PaymentMethod = {
 }
 
 // Reservation types
-export type SelectedPackage = string
+export type SelectedPackageId = string
 
 export type ReservationDbRow = {
   id: string
@@ -56,7 +56,7 @@ export type ReservationDbRow = {
   end_time: string
   venue: string
   guest_count: number
-  selected_package_id: SelectedPackage
+  selected_package_id: SelectedPackageId
   status: string
   payment_method_id: string | null
   payment_proof_path: string | null
@@ -72,7 +72,8 @@ export type Reservation = {
   endTime: string
   venue: string
   guestCount: number
-  selectedPackageId: SelectedPackage
+  selectedPackageId: SelectedPackageId
+  selectedPackageName?: string
   reservationStatus?: string
   paymentMethodId?: string | null
   paymentProofPath?: string | null

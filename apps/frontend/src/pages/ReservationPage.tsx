@@ -108,8 +108,7 @@ export function ReservationPage() {
     }
 
 
-    const packagePrice = (reservation.selectedPackage === "classic" ? reservation.guestCount * 50 : reservation.guestCount * 100)
-
+   
     if (reservation.reservationStatus === "pending_acceptance") {
         statusTitle = "Reservation pending acceptance"
         statusDescription =
@@ -214,14 +213,14 @@ export function ReservationPage() {
                 reservation={reservation}
             />
             <PackageDetailsCard
-                packagePrice={packagePrice}
+                packagePrice={reservation.}
                 selectedPackage={reservation.selectedPackage} />
             <form>
                 {reservation.reservationStatus !== "pending_acceptance" &&
                 reservation.reservationStatus !== "booking_rejected" &&  (
                 <PaymentMethodSelector
                     paymentMethods={paymentMethods}
-                    packagePrice={packagePrice}
+                    packagePrice={reservation.}
                     selectedPaymentMethodId={selectedPaymentMethodId}
                     setSelectedPaymentMethodId={setSelectedPaymentMethodId}
                     selectedFile={selectedFile}

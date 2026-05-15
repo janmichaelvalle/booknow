@@ -12,11 +12,15 @@ export type QuotationValues = {
 
 
 export type Reservation = {
-  id: string
+   id: string
   eventDate: string
+  startTime: string
+  endTime: string
+  venue: string
   guestCount: number
-  selectedPackage: string
-  reservationStatus: string,
+  selectedPackageId: string
+  selectedPackageName?: string
+  reservationStatus?: string
   paymentMethodId?: string | null
   paymentProofPath?: string | null
   rejectionReason?: string | null
