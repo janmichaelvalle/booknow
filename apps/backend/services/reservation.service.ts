@@ -5,9 +5,10 @@ import type { Reservation, ReservationDbRow, ServiceResponse } from "../lib/type
 
 
 type ReservationFormBody = Pick<
-    Reservation,
-    "eventDate" | "guestCount" | "selectedPackage"
+  Reservation,
+  "eventDate" | "startTime" | "endTime" | "venue" | "guestCount" | "selectedPackageId"
 >
+
 
 type UpdateReservationStatusBody = Pick<
     Reservation,
@@ -18,7 +19,7 @@ export async function getReservationsByBusinessSlug(businessId: string):
     // this async function returns a Promise, and when that Promise finishes, the final value will match ServiceResult
     Promise<ServiceResponse<Reservation[]>> {
 
-   
+
     const { data: rows, error } = await supabase
         .from('reservations')
         .select('id,event_date,guest_count,selected_package,status')
@@ -52,7 +53,7 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
 
     const { data: row, error } = await supabase
         .from('reservations')
-        .select('id,event_date,guest_count,selected_package,status,payment_method_id,payment_proof_path,rejection_reason')
+        .select('id,guest_count,selected_package_id,start_time,end_time,venue,status,payment_method_id,payment_proof_path,rejection_reason')
         .eq('id', reservationId)
         .eq('business_id', businessId)
         .maybeSingle()
@@ -79,8 +80,11 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
     const reservation: Reservation = {
         id: row.id,
         eventDate: row.event_date,
+        startTime: row.start_time,
+        endTime: row.end_time,
+        venue: row.venue,
         guestCount: row.guest_count,
-        selectedPackage: row.selected_package,
+        selectedPackageId: row.selected_package_id,
         reservationStatus: row.status,
         paymentMethodId: row.payment_method_id,
         paymentProofPath: row.payment_proof_path,
@@ -96,14 +100,17 @@ export async function createReservation(businessId: string, body: ReservationFor
     const payload = {
         business_id: businessId,
         event_date: String(body.eventDate),
+        start_time: body.startTime,
+        end_time: body.endTime,
+        venue: body.venue,
         guest_count: Number(body.guestCount),
-        selected_package: body.selectedPackage,
+        selected_package_id: body.selectedPackageId,
     }
 
     const { data: rows, error } = await supabase
         .from('reservations')
         .insert(payload)
-        .select('id,event_date,guest_count,selected_package')
+        .select('id,event_date,guest_count,selected_package_id,start_time,end_time,venue,status')
 
     if (error || !rows?.length) {
         return {
@@ -118,8 +125,11 @@ export async function createReservation(businessId: string, body: ReservationFor
     const newReservation: Reservation = {
         id: inserted.id,
         eventDate: inserted.event_date,
+        startTime: inserted.start_time,
+        endTime: inserted.end_time,
+        venue: inserted.venue,
         guestCount: inserted.guest_count,
-        selectedPackage: inserted.selected_package,
+        selectedPackageId: inserted.selected_package_id,
         reservationStatus: "pending_acceptance"
     }
     return { data: newReservation }
@@ -169,7 +179,7 @@ export async function updateReservation(businessId: string, body: ReservationFor
 }
 
 export async function updateReservationStatus(businessId: string, reservationId: Reservation['id'], reservationStatus, rejectionReason): Promise<ServiceResponse<UpdateReservationStatusBody>> {
-   
+
 
     const payload = {
         status: reservationStatus,

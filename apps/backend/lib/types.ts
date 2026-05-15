@@ -52,8 +52,11 @@ export type SelectedPackage = string
 export type ReservationDbRow = {
   id: string
   event_date: string
+  start_time: string
+  end_time: string
+  venue: string
   guest_count: number
-  selected_package: SelectedPackage
+  selected_package_id: SelectedPackage
   status: string
   payment_method_id: string | null
   payment_proof_path: string | null
@@ -65,8 +68,11 @@ export type ReservationDbRow = {
 export type Reservation = {
   id: string
   eventDate: string
+  startTime: string
+  endTime: string
+  venue: string
   guestCount: number
-  selectedPackage: SelectedPackage
+  selectedPackageId: SelectedPackage
   reservationStatus?: string
   paymentMethodId?: string | null
   paymentProofPath?: string | null

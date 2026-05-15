@@ -125,6 +125,7 @@ export function QuotationPage() {
       <form
         onSubmit={(e) => {
           console.log("Form submit event fired")
+          console.log("Current form values:", form.state.values)
           e.preventDefault()
           e.stopPropagation()
           form.handleSubmit()
