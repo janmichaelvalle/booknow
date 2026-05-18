@@ -5,8 +5,16 @@ import type { Reservation, ReservationDbRow, ServiceResponse } from "../lib/type
 
 
 type ReservationFormBody = Pick<
-  Reservation,
-  "eventDate" | "startTime" | "endTime" | "venue" | "guestCount" | "selectedPackageId"
+    Reservation,
+    "eventDate" | 
+    "startTime" | 
+    "endTime" | 
+    "venue" | 
+    "guestCount" | 
+    "selectedPackageId" | 
+    "packageTotal" |
+    "addOnsTotal" |
+    "grandTotal"
 >
 
 
@@ -106,6 +114,10 @@ export async function createReservation(businessId: string, body: ReservationFor
         venue: body.venue,
         guest_count: Number(body.guestCount),
         selected_package_id: body.selectedPackageId,
+        package_total: body.packageTotal,
+        addons_total: body.addOnsTotal,
+        grand_total: body.grandTotal
+
     }
 
     const { data: rows, error } = await supabase
@@ -131,6 +143,9 @@ export async function createReservation(businessId: string, body: ReservationFor
         venue: inserted.venue,
         guestCount: inserted.guest_count,
         selectedPackageId: inserted.selected_package_id,
+        packageTotal: inserted.package_total,
+        addOnsTotal: inserted.addons_total,
+        grandTotal: inserted.grand_total,
         reservationStatus: "pending_acceptance"
     }
     return { data: newReservation }

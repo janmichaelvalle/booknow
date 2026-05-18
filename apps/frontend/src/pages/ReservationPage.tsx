@@ -108,7 +108,7 @@ export function ReservationPage() {
     }
 
 
-   
+
     if (reservation.reservationStatus === "pending_acceptance") {
         statusTitle = "Reservation pending acceptance"
         statusDescription =
@@ -213,41 +213,41 @@ export function ReservationPage() {
                 reservation={reservation}
             />
             <PackageDetailsCard
-                packagePrice={reservation.}
-                selectedPackage={reservation.selectedPackage} />
+                packagePrice={0}
+                selectedPackage={reservation.selectedPackageName} />
             <form>
                 {reservation.reservationStatus !== "pending_acceptance" &&
-                reservation.reservationStatus !== "booking_rejected" &&  (
-                <PaymentMethodSelector
-                    paymentMethods={paymentMethods}
-                    packagePrice={reservation.}
-                    selectedPaymentMethodId={selectedPaymentMethodId}
-                    setSelectedPaymentMethodId={setSelectedPaymentMethodId}
-                    selectedFile={selectedFile}
-                    setSelectedFile={setSelectedFile}
-                    uploadedProofUrl={uploadedProofUrl}
-                    disabled={isPaymentLocked}
+                    reservation.reservationStatus !== "booking_rejected" && (
+                        <PaymentMethodSelector
+                            paymentMethods={paymentMethods}
+                            packagePrice={0}
+                            selectedPaymentMethodId={selectedPaymentMethodId}
+                            setSelectedPaymentMethodId={setSelectedPaymentMethodId}
+                            selectedFile={selectedFile}
+                            setSelectedFile={setSelectedFile}
+                            uploadedProofUrl={uploadedProofUrl}
+                            disabled={isPaymentLocked}
 
-                />
-                )}
+                        />
+                    )}
                 {reservation.reservationStatus === "pending_payment" && (
-                <Button type="button" onClick={() => setIsConfirmOpen(true)} disabled={!canSubmitPayment || isPaymentLocked}>
-                    Submit Payment & Reserve Date
-                </Button>
+                    <Button type="button" onClick={() => setIsConfirmOpen(true)} disabled={!canSubmitPayment || isPaymentLocked}>
+                        Submit Payment & Reserve Date
+                    </Button>
                 )
                 }
             </form>
             {reservation.reservationStatus === "pending_acceptance" && (
-            <Button disabled={isPaymentLocked} type="button" onClick={() =>
-                navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
-                    state: {
-                        eventDate: reservation.eventDate,
-                        guestCount: reservation.guestCount,
-                        selectedPackage: reservation.selectedPackage,
-                    }
-                })}>
-                Edit quotation
-            </Button>
+                <Button disabled={isPaymentLocked} type="button" onClick={() =>
+                    navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
+                        state: {
+                            eventDate: reservation.eventDate,
+                            guestCount: reservation.guestCount,
+                            selectedPackage: reservation.selectedPackageName,
+                        }
+                    })}>
+                    Edit quotation
+                </Button>
             )}
             <ConfirmDialog
                 open={isConfirmOpen}

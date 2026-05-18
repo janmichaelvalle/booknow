@@ -12,6 +12,9 @@ create table if not exists public.reservations (
   venue text not null,
   guest_count integer not null check (guest_count > 0),
   selected_package_id uuid not null references public.business_packages(id),
+  package_total numeric(10,2) not null default 0,
+  addons_total numeric(10,2) not null default 0,
+  grand_total numeric(10,2) not null default 0,
   status text not null default 'pending_acceptance' check (
     status in (
       'pending_acceptance',

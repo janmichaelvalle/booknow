@@ -24,6 +24,72 @@ const quotationSchema = z.object({
 })
 
 
+function calculateQuotationTotals(values: QuotationValues, offerings: Offerings) {
+  const guestCount = values.guestCount ?? 0
+
+  const selectedPricing = offerings.packagePricing.find((price) => {
+    const matchesPackage = price.package_id === values.selectedPackage
+    const matchesMinGuests = guestCount >= price.min_guests
+    const matchesMaxGuests =
+      price.max_guests === null || guestCount <= price.max_guests
+
+    return matchesPackage && matchesMinGuests && matchesMaxGuests
+  })
+
+  const packageTotal = selectedPricing
+    ? guestCount * selectedPricing.price_per_guest
+    : 0
+
+  const selectedPackage = offerings.packages.find(
+    (pkg) => pkg.id === values.selectedPackage
+  )
+
+  const selectedPackageSummary = {
+    name: selectedPackage?.name ?? "",
+    pricePerGuest: selectedPricing?.price_per_guest ?? 0,
+    guestCount,
+    basePrice: packageTotal,
+  }
+
+  const addOnsTotal = offerings.addons.reduce((sum, addon) => {
+    const quantity = values.selectedAddOns[addon.id] ?? 0
+    return sum + addon.price * quantity
+  }, 0)
+
+  const selectedAddOnItems = offerings.addons
+     // .map() goes through all items of the array one by one
+    .map((addon) => {
+        // quantity stores the selected quantities of that specific add-on
+      const quantity = values.selectedAddOns[addon.id] ?? 0
+
+      // If quantity is zero return nothing because the user did not select anything
+      if (quantity === 0) return null
+
+       // creates a new object
+      return {
+        id: addon.id,
+        name: addon.name,
+        price: addon.price,
+        quantity,
+        lineTotal: addon.price * quantity,
+      }
+    })
+     // .filter removes null values in the array
+    .filter(Boolean)
+
+  return {
+    guestCount,
+    selectedPricing,
+    selectedPackage,
+    packageTotal,
+    addOnsTotal,
+    grandTotal: packageTotal + addOnsTotal,
+    selectedPackageSummary,
+    selectedAddOnItems,
+  }
+}
+
+
 export function QuotationPage() {
 
   const navigate = useNavigate()
@@ -35,7 +101,7 @@ export function QuotationPage() {
     endTime: "",
     venue: "",
     guestCount: undefined,
-    selectedPackage: "",
+    selectedPackage : "",
     selectedAddOns: {}
   }
 
@@ -81,7 +147,11 @@ export function QuotationPage() {
       if (!value.eventDate) {
         console.error("Event date is required")
         return
-      }
+      } 
+
+      const totals = calculateQuotationTotals(value, offerings)
+
+   
 
       const payload = {
         eventDate: value.eventDate.toISOString(),
@@ -89,7 +159,10 @@ export function QuotationPage() {
         endTime: value.endTime,
         venue: value.venue,
         guestCount: value.guestCount,
-        selectedPackage: value.selectedPackage,
+        selectedPackageId: value.selectedPackage,
+        packageTotal: totals.packageTotal,
+        addOnsTotal: totals.addOnsTotal,
+        grandTotal: totals.grandTotal
       }
 
       const res = await fetch(
@@ -138,60 +211,7 @@ export function QuotationPage() {
         so this UI re-renders when the form values change. */}
         <form.Subscribe selector={(state) => state.values}>
           {(values) => {
-            const guestCount = values.guestCount ?? 0
-
-            const selectedPricing = offerings.packagePricing.find((price) => {
-              const matchesPackage = price.package_id === values.selectedPackage
-              const matchesMinGuests = guestCount >= price.min_guests
-              const matchesMaxGuests =
-                price.max_guests === null || guestCount <= price.max_guests
-
-              return matchesPackage && matchesMinGuests && matchesMaxGuests
-            })
-
-            const basePrice = selectedPricing
-              ? guestCount * selectedPricing.price_per_guest
-              : 0
-
-            const selectedPackage = offerings.packages.find(
-              (pkg) => pkg.id === values.selectedPackage
-            )
-
-
-            const selectedPackageSummary = {
-              name: selectedPackage?.name ?? "",
-              pricePerGuest: selectedPricing?.price_per_guest ?? 0,
-              guestCount,
-              basePrice,
-            }
-
-
-            const addsOnsTotal = offerings.addons.reduce((sum, addon) => {
-              const quantity = values.selectedAddOns[addon.id] ?? 0
-              return sum + addon.price * quantity
-            }, 0)
-
-            const selectedAddOnItems = offerings.addons
-              // .map() goes through all items of the array one by one
-              .map((addon) => {
-
-                // quantity stores the selected quantities of that specific add-on
-                const quantity = values.selectedAddOns[addon.id] ?? 0
-
-                // If quantity is zero return nothing because the user did not select anything
-                if (quantity === 0) return null
-
-                // creates a new object
-                return {
-                  id: addon.id,
-                  name: addon.name,
-                  price: addon.price,
-                  quantity: quantity,
-                  lineTotal: addon.price * quantity,
-                }
-              })
-              // .filter removes null values in the array
-              .filter(Boolean)
+           const totals = calculateQuotationTotals(values, offerings)
 
 
             return (
@@ -200,7 +220,7 @@ export function QuotationPage() {
                   form={form}
                   packages={offerings.packages}
                   packagePricing={offerings.packagePricing}
-                  guestCount={guestCount}
+                  guestCount={totals.guestCount}
 
                 />
                 <AddOns
@@ -208,10 +228,10 @@ export function QuotationPage() {
                   form={form}
                 />
                 <SummaryDetails
-                  basePrice={basePrice}
-                  addOnsPrice={addsOnsTotal}
-                  selectedAddOnItems={selectedAddOnItems}
-                  selectedPackageSummary={selectedPackageSummary}
+                  basePrice={totals.packageTotal}
+                  addOnsPrice={totals.addOnsTotal}
+                  selectedAddOnItems={totals.selectedAddOnItems}
+                  selectedPackageSummary={totals.selectedPackageSummary}
                 />
 
               </>

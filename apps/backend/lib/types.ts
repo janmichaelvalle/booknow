@@ -57,6 +57,9 @@ export type ReservationDbRow = {
   venue: string
   guest_count: number
   selected_package_id: SelectedPackageId
+  package_total: number
+  addons_total: number
+  grand_total: number
   status: string
   payment_method_id: string | null
   payment_proof_path: string | null
@@ -73,6 +76,9 @@ export type Reservation = {
   venue: string
   guestCount: number
   selectedPackageId: SelectedPackageId
+  packageTotal: number
+  addOnsTotal: number
+  grandTotal: number
   selectedPackageName?: string
   reservationStatus?: string
   paymentMethodId?: string | null
