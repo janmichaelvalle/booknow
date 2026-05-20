@@ -212,9 +212,10 @@ export function ReservationPage() {
             <EventDetailsCard
                 reservation={reservation}
             />
-            <PackageDetailsCard
+            {/* <PackageDetailsCard
                 packagePrice={0}
-                selectedPackage={reservation.selectedPackageName} />
+                selectedPackage={reservation.selectedPackageName} 
+            /> */}
             <form>
                 {reservation.reservationStatus !== "pending_acceptance" &&
                     reservation.reservationStatus !== "booking_rejected" && (

@@ -1,21 +1,8 @@
 import { supabase } from "../lib/supabase.js";
 import { getBusinessBySlugOrError } from "./business.service.js";
-import type { Reservation, ReservationDbRow, ServiceResponse } from "../lib/types.js";
+import type { Reservation, ReservationDbRow, ServiceResponse, ReservationFormBody } from "../lib/types.js";
 
 
-
-type ReservationFormBody = Pick<
-    Reservation,
-    "eventDate" | 
-    "startTime" | 
-    "endTime" | 
-    "venue" | 
-    "guestCount" | 
-    "selectedPackageId" | 
-    "packageTotal" |
-    "addOnsTotal" |
-    "grandTotal"
->
 
 
 type UpdateReservationStatusBody = Pick<
@@ -61,7 +48,23 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
 
     const { data: row, error } = await supabase
         .from('reservations')
-        .select('id,guest_count,selected_package_id,event_date,start_time,end_time,venue,status,payment_method_id,payment_proof_path,rejection_reason,business_packages ( id, name )')
+        .select(`
+            id,
+            guest_count,
+            selected_package_id,
+            package_total,
+            addons_total,
+            grand_total,
+            event_date,
+            start_time,
+            end_time,
+            venue,
+            status,
+            payment_method_id,
+            payment_proof_path,
+            rejection_reason,
+            business_packages ( id, name )
+        `)
         .eq('id', reservationId)
         .eq('business_id', businessId)
         .maybeSingle()
@@ -94,6 +97,9 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         guestCount: row.guest_count,
         selectedPackageName: row.business_packages?.name ?? "",
         selectedPackageId: row.selected_package_id,
+        packageTotal: row.package_total,
+        addOnsTotal: row.addons_total,
+        grandTotal: row.grand_total,
         reservationStatus: row.status,
         paymentMethodId: row.payment_method_id,
         paymentProofPath: row.payment_proof_path,
@@ -117,13 +123,24 @@ export async function createReservation(businessId: string, body: ReservationFor
         package_total: body.packageTotal,
         addons_total: body.addOnsTotal,
         grand_total: body.grandTotal
-
     }
 
     const { data: rows, error } = await supabase
         .from('reservations')
         .insert(payload)
-        .select('id,event_date,guest_count,selected_package_id,start_time,end_time,venue,status')
+        .select(`
+            id,
+            event_date,
+            guest_count,
+            selected_package_id,
+            package_total,
+            addons_total,
+            grand_total,
+            start_time,
+            end_time,
+            venue,
+            status
+            `)
 
     if (error || !rows?.length) {
         return {
@@ -135,6 +152,22 @@ export async function createReservation(businessId: string, body: ReservationFor
         }
     }
     const inserted = rows[0] as ReservationDbRow
+
+    const selectedAddons = Object.entries(body.selectedAddOns).
+        filter((addon) => addon[1] > 0)
+        .map((addon) => ({
+            reservation_id: inserted.id, 
+            addon_id: addon[0], 
+            quantity: addon[1]
+        }))
+
+    
+    const add_ons_payload = {
+        reservation_id: selectedAddons.reserv,
+
+
+    }
+
     const newReservation: Reservation = {
         id: inserted.id,
         eventDate: inserted.event_date,

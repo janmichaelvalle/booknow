@@ -86,6 +86,19 @@ export type Reservation = {
   rejectionReason?: string | null
 }
 
+export type ReservationFormBody = {
+  eventDate: string
+  startTime: string
+  endTime: string
+  venue: string
+  guestCount: number
+  selectedPackageId: string
+  packageTotal: number
+  addOnsTotal: number
+  grandTotal: number
+  selectedAddOns: Record<string, number>
+}
+
 
 // Service response type
 export type ServiceResponse<T> =

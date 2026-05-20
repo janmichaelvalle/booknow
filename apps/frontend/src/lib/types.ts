@@ -20,6 +20,9 @@ export type Reservation = {
   guestCount: number
   selectedPackageId: string
   selectedPackageName?: string
+  packageTotal: number
+  addOnsTotal: number
+  grandTotal: number
   reservationStatus?: string
   paymentMethodId?: string | null
   paymentProofPath?: string | null

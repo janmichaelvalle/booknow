@@ -160,6 +160,7 @@ export function QuotationPage() {
         venue: value.venue,
         guestCount: value.guestCount,
         selectedPackageId: value.selectedPackage,
+        selectedAddOns: value.selectedAddOns,
         packageTotal: totals.packageTotal,
         addOnsTotal: totals.addOnsTotal,
         grandTotal: totals.grandTotal
