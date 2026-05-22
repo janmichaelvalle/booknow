@@ -63,7 +63,13 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
             payment_method_id,
             payment_proof_path,
             rejection_reason,
-            business_packages ( id, name )
+            business_packages ( id, name ),
+            reservation_addons (
+            reservation_id, 
+            addon_id, 
+            quantity, 
+            business_addons(id, name, price)
+            )
         `)
         .eq('id', reservationId)
         .eq('business_id', businessId)
@@ -88,6 +94,14 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         }
     }
 
+
+    const selectedAddOns = row.reservation_addons.map((addon) => ({
+        addonId: addon.addon_id,
+        addonName: addon.business_addons?.name ?? "",
+        quantity: addon.quantity
+    }))
+
+
     const reservation: Reservation = {
         id: row.id,
         eventDate: row.event_date,
@@ -97,6 +111,7 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         guestCount: row.guest_count,
         selectedPackageName: row.business_packages?.name ?? "",
         selectedPackageId: row.selected_package_id,
+        selectedAddOns: selectedAddOns,
         packageTotal: row.package_total,
         addOnsTotal: row.addons_total,
         grandTotal: row.grand_total,
@@ -105,7 +120,7 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         paymentProofPath: row.payment_proof_path,
         rejectionReason: row.rejection_reason,
     }
-
+   
     return { data: reservation }
 
 }
@@ -125,7 +140,7 @@ export async function createReservation(businessId: string, body: ReservationFor
         grand_total: body.grandTotal
     }
 
-    const { data: rows, error } = await supabase
+    const { data: reservationRows, error: reservationError } = await supabase
         .from('reservations')
         .insert(payload)
         .select(`
@@ -142,18 +157,18 @@ export async function createReservation(businessId: string, body: ReservationFor
             status
             `)
 
-    if (error || !rows?.length) {
+    if (reservationError || !reservationRows?.length) {
         return {
             error: {
                 message: 'Failed to create reservation',
-                details: error?.message ?? 'No row returned',
+                details: reservationError?.message ?? 'No row returned',
                 status: 500,
             }
         }
     }
-    const inserted = rows[0] as ReservationDbRow
+    const inserted = reservationRows[0] as ReservationDbRow
 
-    const selectedAddons = Object.entries(body.selectedAddOns).
+    const selectedAddonsPayload = Object.entries(body.selectedAddOns).
         filter((addon) => addon[1] > 0)
         .map((addon) => ({
             reservation_id: inserted.id, 
@@ -161,13 +176,20 @@ export async function createReservation(businessId: string, body: ReservationFor
             quantity: addon[1]
         }))
 
+    const { data: reservationAddOnRows, error: reservationAddOnError } = await supabase
+        .from('reservation_addons')
+        .insert(selectedAddonsPayload)
     
-    const add_ons_payload = {
-        reservation_id: selectedAddons.reserv,
-
-
+    if (reservationAddOnError) {
+        return {
+            error: {
+                message: 'Failed to create reservation_addons',
+                details: reservationAddOnError?.message ?? 'No row returned',
+                status: 500,
+            }
+        }
     }
-
+    
     const newReservation: Reservation = {
         id: inserted.id,
         eventDate: inserted.event_date,

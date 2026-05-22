@@ -66,6 +66,11 @@ export type ReservationDbRow = {
   rejection_reason: string | null
 }
 
+export type SelectedReservationAddOn = {
+  addonId: string
+  addonName: string
+  quantity: number
+}
 
 
 export type Reservation = {
@@ -76,6 +81,7 @@ export type Reservation = {
   venue: string
   guestCount: number
   selectedPackageId: SelectedPackageId
+  selectedAddOns: SelectedReservationAddOn[],
   packageTotal: number
   addOnsTotal: number
   grandTotal: number

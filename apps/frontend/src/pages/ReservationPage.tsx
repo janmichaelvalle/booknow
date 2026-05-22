@@ -73,6 +73,7 @@ export function ReservationPage() {
 
     useEffect(() => {
         console.log("reservation in useEffect:", reservation)
+     
         if (reservation?.paymentMethodId) {
             setSelectedPaymentMethodId(reservation.paymentMethodId)
         }
