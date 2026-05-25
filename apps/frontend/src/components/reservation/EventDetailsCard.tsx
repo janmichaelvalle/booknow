@@ -64,26 +64,26 @@ export function EventDetailsCard({ reservation }: EventDetailsCardProps) {
                         Price Breakdown
                     </h2>
                 </div>
-                <div className="flex items-center justify-between text-xl">
+                <div className="flex items-center justify-between text-lg">
                     <span className="text-muted-foreground">{reservation.selectedPackageName} for {reservation.guestCount} guests</span>
-                    <span>{reservation.packageTotal} </span>
+                    <span> ₱ {reservation.packageTotal.toLocaleString()} </span>
                 </div>
                 {reservation.selectedAddOns.map((addon) => (
                     <div
                         key={addon.addonId}
-                        className="flex items-center justify-between text-xl"
+                        className="flex items-center justify-between text-lg"
                     >
                         <span className="text-muted-foreground">{addon.addonName}</span>
-                        <span>{addon.addonPrice} x {addon.quantity} = {addon.quantity * addon.addonPrice} </span>
+                        <span>{addon.addonPrice.toLocaleString()} x {addon.quantity} = ₱ {(addon.quantity * addon.addonPrice).toLocaleString()} </span>
                     </div>
                 ))}
 
 
                 <div className="my-4 border-t" />
 
-                <div className="flex items-center justify-between text-2xl font-semibold">
+                <div className="flex items-center justify-between text-xl font-semibold">
                     <span>Total Amount</span>
-                    <span>{reservation.grandTotal}</span>
+                    <span>₱ {reservation.grandTotal.toLocaleString()}</span>
                 </div>
             </CardContent>
         </Card>
