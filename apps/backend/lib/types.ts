@@ -69,6 +69,7 @@ export type ReservationDbRow = {
 export type SelectedReservationAddOn = {
   addonId: string
   addonName: string
+  addonPrice: number,
   quantity: number
 }
 

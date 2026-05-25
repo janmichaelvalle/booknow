@@ -7,6 +7,8 @@ create table if not exists public.reservation_addons (
   id uuid primary key default gen_random_uuid(),
   reservation_id uuid not null references public.reservations(id) on delete cascade,
   addon_id uuid not null references public.business_addons(id) on delete cascade,
+  addon_name text not null,
+  addon_price numeric(10,2) not null check (addon_price >= 0),
   quantity integer not null check (quantity > 0),
   created_at timestamptz not null default now(),
 

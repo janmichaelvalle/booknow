@@ -10,15 +10,22 @@ export type QuotationValues = {
 
 }
 
+export type SelectedReservationAddOn = {
+  addonId: string
+  addonName: string
+  addonPrice: number,
+  quantity: number
+}
 
 export type Reservation = {
-   id: string
+  id: string
   eventDate: string
   startTime: string
   endTime: string
   venue: string
   guestCount: number
   selectedPackageId: string
+  selectedAddOns: SelectedReservationAddOn[],
   selectedPackageName?: string
   packageTotal: number
   addOnsTotal: number
@@ -72,7 +79,7 @@ export type Offerings = {
   addons: AddOn[]
 }
 
-export type SelectedAddOnItem= {
+export type SelectedAddOnItem = {
   id: string
   name: string
   price: number

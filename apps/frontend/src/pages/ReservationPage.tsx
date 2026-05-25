@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { type Reservation, type PaymentMethod } from "@/lib/types"
 import { Link } from "react-router-dom"
 import { EventDetailsCard } from "@/components/reservation/EventDetailsCard"
-import { PackageDetailsCard } from "@/components/reservation/PackageDetailsCard"
 import { PaymentMethodSelector } from "@/components/reservation/PaymentMethodSelector"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 

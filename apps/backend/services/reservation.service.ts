@@ -67,7 +67,9 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
             reservation_addons (
             reservation_id, 
             addon_id, 
-            quantity, 
+            quantity,
+            addon_price,
+            addon_name, 
             business_addons(id, name, price)
             )
         `)
@@ -84,7 +86,6 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
             }
         }
     }
-
     if (!row) {
         return {
             error: {
@@ -94,10 +95,10 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         }
     }
 
-
     const selectedAddOns = row.reservation_addons.map((addon) => ({
         addonId: addon.addon_id,
-        addonName: addon.business_addons?.name ?? "",
+        addonName: addon.addon_name,
+        addonPrice: addon.addon_price,
         quantity: addon.quantity
     }))
 
@@ -120,7 +121,7 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         paymentProofPath: row.payment_proof_path,
         rejectionReason: row.rejection_reason,
     }
-   
+
     return { data: reservation }
 
 }
@@ -168,28 +169,58 @@ export async function createReservation(businessId: string, body: ReservationFor
     }
     const inserted = reservationRows[0] as ReservationDbRow
 
-    const selectedAddonsPayload = Object.entries(body.selectedAddOns).
+    const selectedAddOnsId = Object.entries(body.selectedAddOns).
         filter((addon) => addon[1] > 0)
-        .map((addon) => ({
-            reservation_id: inserted.id, 
-            addon_id: addon[0], 
-            quantity: addon[1]
-        }))
+        .map((addon) => addon[0])
 
-    const { data: reservationAddOnRows, error: reservationAddOnError } = await supabase
-        .from('reservation_addons')
-        .insert(selectedAddonsPayload)
-    
-    if (reservationAddOnError) {
+    const { data: businessAddOns, error: businessAddOnsError } = await supabase
+        .from('business_addons')
+        .select(`
+        id,
+        name,
+        price
+        `)
+        .in("id", selectedAddOnsId)
+
+    if (businessAddOnsError || !businessAddOns) {
         return {
             error: {
-                message: 'Failed to create reservation_addons',
-                details: reservationAddOnError?.message ?? 'No row returned',
+                message: "Failed to fetch business add-ons",
+                details: businessAddOnsError?.message ?? "No add-ons returned",
                 status: 500,
             }
         }
     }
-    
+
+    const selectedAddonsPayload = Object.entries(body.selectedAddOns)
+        .filter((addon) => addon[1] > 0)
+        .map((addon) => {
+            const matchedAddOn = businessAddOns.find(
+                (businessAddOn) => businessAddOn.id === addon[0]
+            )
+            return {
+                reservation_id: inserted.id,
+                addon_id: addon[0],
+                addon_name: matchedAddOn?.name ?? "",
+                addon_price: matchedAddOn?.price ?? 0,
+                quantity: addon[1],
+            }
+        })
+
+    const { data: reservationAddOnRows, error: reservationAddOnRowsError } = await supabase
+        .from('reservation_addons')
+        .insert(selectedAddonsPayload)
+
+    if (reservationAddOnRowsError) {
+        return {
+            error: {
+                message: 'Failed to create reservation_addons',
+                details: reservationAddOnRowsError?.message ?? 'No row returned',
+                status: 500,
+            }
+        }
+    }
+
     const newReservation: Reservation = {
         id: inserted.id,
         eventDate: inserted.event_date,

@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/card"
 import { type Reservation } from "@/lib/types"
 import { Calendar, Clock3, MapPin, Users } from "lucide-react"
-import { format } from "date-fns"
+import { add, format } from "date-fns"
 
 type EventDetailsCardProps = {
     reservation: Reservation
@@ -68,12 +68,22 @@ export function EventDetailsCard({ reservation }: EventDetailsCardProps) {
                     <span className="text-muted-foreground">{reservation.selectedPackageName} for {reservation.guestCount} guests</span>
                     <span>{reservation.packageTotal} </span>
                 </div>
+                {reservation.selectedAddOns.map((addon) => (
+                    <div
+                        key={addon.addonId}
+                        className="flex items-center justify-between text-xl"
+                    >
+                        <span className="text-muted-foreground">{addon.addonName}</span>
+                        <span>{addon.addonPrice} x {addon.quantity} = {addon.quantity * addon.addonPrice} </span>
+                    </div>
+                ))}
+
 
                 <div className="my-4 border-t" />
 
                 <div className="flex items-center justify-between text-2xl font-semibold">
                     <span>Total Amount</span>
-                    <span>PHP 28,000</span>
+                    <span>{reservation.grandTotal}</span>
                 </div>
             </CardContent>
         </Card>
