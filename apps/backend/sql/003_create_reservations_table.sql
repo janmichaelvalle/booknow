@@ -6,6 +6,9 @@ create extension if not exists pgcrypto;
 create table if not exists public.reservations (
   id uuid primary key default gen_random_uuid(),
   business_id uuid not null references public.businesses(id) on delete cascade,
+  customer_name text not null,
+  customer_email text not null,
+  customer_phone text not null,
   event_date timestamptz not null,
   start_time text not null,
   end_time text not null,

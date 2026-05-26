@@ -25,17 +25,23 @@ export function SummaryDetails({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span>{selectedPackageSummary.name} for {selectedPackageSummary.guestCount} guests</span>
-          <span>₱ {selectedPackageSummary.basePrice.toLocaleString()}</span>
-        </div>
+        <div className="space-y-2">
+  <p className="text-sm font-medium text-muted-foreground">Package</p>
+  <div className="flex items-center justify-between">
+    <span>{selectedPackageSummary.name} ({selectedPackageSummary.guestCount} guests)</span>
+    <span>₱ {selectedPackageSummary.basePrice.toLocaleString()}</span>
+  </div>
+</div>
 
-        {selectedAddOnItems.map((item) => (
-          <div key={item.id} className="flex items-center justify-between">
-          <span>{item.name}</span>
-          <span>{item.price.toLocaleString()} x {item.quantity} = ₱ {item.lineTotal.toLocaleString()}</span>
-        </div>
-        ))}
+       <div className="space-y-2">
+  <p className="text-sm font-medium text-muted-foreground">Add-ons</p>
+  {selectedAddOnItems.map((item) => (
+    <div key={item.id} className="flex items-center justify-between">
+      <span>{item.name}</span>
+      <span>₱ {item.price.toLocaleString()} x {item.quantity} = ₱ {item.lineTotal.toLocaleString()}</span>
+    </div>
+  ))}
+</div>
         
 
         <div className="flex items-center justify-between border-t pt-4 font-semibold">

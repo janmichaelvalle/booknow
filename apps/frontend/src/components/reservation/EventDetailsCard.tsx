@@ -21,11 +21,15 @@ export function EventDetailsCard({ reservation }: EventDetailsCardProps) {
         <Card>
             <CardHeader>
                 <CardTitle className="text-lg uppercase tracking-wide">
-                    Event Details
+                    Reservation Summary
                 </CardTitle>
             </CardHeader>
+            
 
             <CardContent className="space-y-5">
+                <h2 className="text-lg font-semibold uppercase tracking-wide text-muted-foreground">
+                        Event Details
+                    </h2>
                 <div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
                     <Calendar className="mt-1 h-5 w-5 text-muted-foreground" />
                     <div>
@@ -77,6 +81,7 @@ export function EventDetailsCard({ reservation }: EventDetailsCardProps) {
                         <span>{addon.addonPrice.toLocaleString()} x {addon.quantity} = ₱ {(addon.quantity * addon.addonPrice).toLocaleString()} </span>
                     </div>
                 ))}
+                
 
 
                 <div className="my-4 border-t" />
@@ -85,6 +90,32 @@ export function EventDetailsCard({ reservation }: EventDetailsCardProps) {
                     <span>Total Amount</span>
                     <span>₱ {reservation.grandTotal.toLocaleString()}</span>
                 </div>
+                <div className="my-8 border-t pt-8">
+  <h2 className="text-lg font-semibold uppercase tracking-wide text-muted-foreground">
+    Customer Details
+  </h2>
+</div>
+
+<div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
+  <div>
+    <p className="text-sm text-muted-foreground">Full Name</p>
+    <p className="text-lg font-semibold">{reservation.customerName}</p>
+  </div>
+</div>
+
+<div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
+  <div>
+    <p className="text-sm text-muted-foreground">Email Address</p>
+    <p className="text-lg font-semibold">{reservation.customerEmail}</p>
+  </div>
+</div>
+
+<div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
+  <div>
+    <p className="text-sm text-muted-foreground">Phone Number</p>
+    <p className="text-lg font-semibold">{reservation.customerPhone}</p>
+  </div>
+</div>
             </CardContent>
         </Card>
     )

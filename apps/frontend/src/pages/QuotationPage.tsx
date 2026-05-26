@@ -10,6 +10,7 @@ import { type Offerings, type QuotationValues } from "@/lib/types"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query";
 import { add } from "date-fns";
+import { CustomerDetails } from "@/components/quotation/CustomerDetails"
 
 
 // The quotationSchema validates the user inputs
@@ -20,7 +21,10 @@ const quotationSchema = z.object({
   venue: z.string().min(1, "Venue is required"),
   guestCount: z.number().int().min(1, "Guest count must be at least 1"),
   selectedPackage: z.string().min(1, "Package is required"),
-  selectedAddOns: z.record(z.string(), z.number())
+  selectedAddOns: z.record(z.string(), z.number()),
+  customerName: z.string().min(1, "Name is required"),
+  customerEmail: z.email("Valid email is required"),
+  customerPhone: z.string().min(1, "Phone number is required"),
 })
 
 
@@ -102,7 +106,10 @@ export function QuotationPage() {
     venue: "",
     guestCount: undefined,
     selectedPackage : "",
-    selectedAddOns: {}
+    selectedAddOns: {},
+    customerName: "",
+    customerEmail: "",
+    customerPhone: ""
   }
 
   const { data: offerings, isPending: isOfferingPending, error: offeringsError } = useQuery({
@@ -163,7 +170,10 @@ export function QuotationPage() {
         selectedAddOns: value.selectedAddOns,
         packageTotal: totals.packageTotal,
         addOnsTotal: totals.addOnsTotal,
-        grandTotal: totals.grandTotal
+        grandTotal: totals.grandTotal,
+        customerName: value.customerName,
+        customerEmail: value.customerEmail,
+        customerPhone: value.customerPhone,
       }
 
       const res = await fetch(
@@ -195,7 +205,6 @@ export function QuotationPage() {
 
   return (
     <>
-      <h1>This is the quotation page</h1>
       <form
         onSubmit={(e) => {
           console.log("Form submit event fired")
@@ -224,6 +233,7 @@ export function QuotationPage() {
                   guestCount={totals.guestCount}
 
                 />
+             
                 <AddOns
                   addons={offerings.addons}
                   form={form}
@@ -235,11 +245,13 @@ export function QuotationPage() {
                   selectedPackageSummary={totals.selectedPackageSummary}
                 />
 
+                <CustomerDetails form={form} />
+
               </>
             )
           }}
         </form.Subscribe>
-        <Button type="submit">Generate Quotation</Button>
+        <Button type="submit">Reserve Date</Button>
       </form>
     </>
 

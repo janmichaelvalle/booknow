@@ -63,6 +63,9 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
             payment_method_id,
             payment_proof_path,
             rejection_reason,
+            customer_name,
+            customer_email,
+            customer_phone,
             business_packages ( id, name ),
             reservation_addons (
             reservation_id, 
@@ -120,6 +123,9 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         paymentMethodId: row.payment_method_id,
         paymentProofPath: row.payment_proof_path,
         rejectionReason: row.rejection_reason,
+        customerName: row.customer_name,
+        customerEmail: row.customer_email,
+        customerPhone: row.customer_phone
     }
 
     return { data: reservation }
@@ -138,7 +144,10 @@ export async function createReservation(businessId: string, body: ReservationFor
         selected_package_id: body.selectedPackageId,
         package_total: body.packageTotal,
         addons_total: body.addOnsTotal,
-        grand_total: body.grandTotal
+        grand_total: body.grandTotal,
+        customer_name: body.customerName,
+        customer_email: body.customerEmail,
+        customer_phone: body.customerPhone
     }
 
     const { data: reservationRows, error: reservationError } = await supabase
@@ -155,7 +164,10 @@ export async function createReservation(businessId: string, body: ReservationFor
             start_time,
             end_time,
             venue,
-            status
+            status,
+            customer_name,
+            customer_email,
+            customer_phone
             `)
 
     if (reservationError || !reservationRows?.length) {
@@ -232,7 +244,10 @@ export async function createReservation(businessId: string, body: ReservationFor
         packageTotal: inserted.package_total,
         addOnsTotal: inserted.addons_total,
         grandTotal: inserted.grand_total,
-        reservationStatus: "pending_acceptance"
+        reservationStatus: "pending_acceptance",
+        customerName: inserted.customer_name,
+        customerEmail: inserted.customer_email,
+        customerPhone: inserted.customer_phone
     }
     return { data: newReservation }
 

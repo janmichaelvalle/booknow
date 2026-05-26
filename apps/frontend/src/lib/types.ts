@@ -7,7 +7,9 @@ export type QuotationValues = {
   selectedPackage: string
   // Record stores the add-on ID as the object key and quantity as the object value
   selectedAddOns: Record<string, number>
-
+  customerName: string
+  customerEmail: string
+  customerPhone: string
 }
 
 export type SelectedReservationAddOn = {
@@ -34,6 +36,9 @@ export type Reservation = {
   paymentMethodId?: string | null
   paymentProofPath?: string | null
   rejectionReason?: string | null
+  customerName: string
+  customerEmail: string
+  customerPhone: string
 }
 
 export type PaymentMethodCategory =

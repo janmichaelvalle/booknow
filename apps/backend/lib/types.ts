@@ -64,6 +64,9 @@ export type ReservationDbRow = {
   payment_method_id: string | null
   payment_proof_path: string | null
   rejection_reason: string | null
+  customer_name: string
+  customer_email: string
+  customer_phone: string
 }
 
 export type SelectedReservationAddOn = {
@@ -91,6 +94,9 @@ export type Reservation = {
   paymentMethodId?: string | null
   paymentProofPath?: string | null
   rejectionReason?: string | null
+  customerName: string
+  customerEmail: string
+  customerPhone: string
 }
 
 export type ReservationFormBody = {
@@ -104,6 +110,9 @@ export type ReservationFormBody = {
   addOnsTotal: number
   grandTotal: number
   selectedAddOns: Record<string, number>
+  customerName: string
+  customerEmail: string
+  customerPhone: string
 }
 
 
