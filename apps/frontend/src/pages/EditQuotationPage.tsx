@@ -27,21 +27,69 @@ export function EditQuotationPage() {
 
   // Gets the reservationNo in the URL parameter
   const { reservationId, businessSlug } = useParams()
-  const [reservation, setReservation] = useState<Reservation | null>(null)
-  const [isFetching, setIsFetching] = useState<boolean>(false)
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+
+  const { data: offerings, isPending: isOfferingPending, error: offeringsError } = useQuery({
+    queryKey: ["offerings", businessSlug],
+    queryFn: async (): Promise<Offerings> => {
+      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/offerings`)
+      if (!res.ok) {
+        throw new Error("Failed to fetch offerings")
+      }
+      const data = await res.json()
+      return data.data ?? {
+        packages: [],
+        packagePricing: [],
+        addons: [],
+      }
+    },
+    enabled: !!businessSlug,
+    initialData: {
+      packages: [],
+      packagePricing: [],
+      addons: [],
+    }
+
+  })
+
+  const { data: reservation, isPending: isReservationPending, error: reservationError, } = useQuery({
+    queryKey: ["reservation", businessSlug, reservationId],
+    queryFn: async (): Promise<Reservation> => {
+      const res = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}`
+      )
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch reservation")
+      }
+
+      const data = await res.json()
+      return data.data
+    },
+    enabled: !!businessSlug && !!reservationId,
+  })
+
+
+
 
   // Setup from with default values
   const form = useForm<EditQuotationFormValues>({
     defaultValues: {
       eventDate: undefined,
+      startTime: "",
+      endTime: "",
+      venue: "",
       guestCount: undefined,
-      selectedPackage: "classic",
+      selectedPackage: "",
+      selectedAddOns: {},
+      customerName: "",
+      customerEmail: "",
+      customerPhone: ""
     },
   })
 
 
   useEffect(() => {
+
     // If there is no reservationNo from the URL, stop immediately.
     if (!businessSlug || !reservationId) return
 
@@ -61,8 +109,15 @@ export function EditQuotationPage() {
       form.reset({
         // Convert the API date string into a JavaScript Date object for the form.
         eventDate: new Date(data.eventDate),
+        startTime: data.startTime,
+        endTime: data.endTime,
+        venue: data.venue,
         guestCount: data.guestCount,
-        selectedPackage: data.selectedPackage,
+        selectedPackage: data.selectedPackageName,
+        selectedAddOns: data.selectedAddOns,
+        customerName: data.customerName,
+        customerEmail: data.customerEmail,
+        customerPhone: data.customerPhone
       })
 
       // When fetching and form reset is done, remove loading state and add reservation data

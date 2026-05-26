@@ -39,7 +39,7 @@ export async function getReservationsByBusinessSlug(businessId: string):
 
     }))
 
-    return { data: reservations }
+return { data: reservations }
 }
 
 export async function getSingleReservationByBusinessSlug(businessId: string, reservationId: string):
