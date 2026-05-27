@@ -1,29 +1,31 @@
 import type { Reservation } from "@/lib/types"
-import { useEffect } from "react"
-import { useForm } from "react-hook-form"
 import { useParams } from "react-router-dom"
-import { Link } from "react-router-dom"
+import { useQuery } from "@tanstack/react-query"
 import { EventDetails } from "@/components/quotation/EventDetails"
 import { PackageDetails } from "@/components/quotation/PackageDetails"
-import { type QuotationValues } from "@/lib/types"
-import { useState } from "react"
+import { type QuotationValues, type SelectedReservationAddOn } from "@/lib/types"
+import { type Offerings } from "@/lib/types"
 import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { toast } from "sonner"
+import { useForm } from "@tanstack/react-form"
+import { calculateQuotationTotals } from "@/lib/quotation";
+import { AddOns } from "@/components/quotation/AddOns";
+import { SummaryDetails } from "@/components/quotation/SummaryDetails";
+import { CustomerDetails } from "@/components/quotation/CustomerDetails"
 
-// Pick creates a smaller type from QuotationValues using only the fields this form needs.
-type EditQuotationFormValues = Pick<
-  QuotationValues,
-  "eventDate" | "guestCount" | "selectedPackage"
->
 
+
+type EditQuotationFormProps = {
+  reservation: Reservation
+  offerings: Offerings
+  businessSlug: string
+  reservationId: string
+}
 
 
 export function EditQuotationPage() {
-
-  // Instantiate navgiate
-  const navigate = useNavigate()
 
   // Gets the reservationNo in the URL parameter
   const { reservationId, businessSlug } = useParams()
@@ -68,167 +70,173 @@ export function EditQuotationPage() {
     enabled: !!businessSlug && !!reservationId,
   })
 
-
-
-
-  // Setup from with default values
-  const form = useForm<EditQuotationFormValues>({
-    defaultValues: {
-      eventDate: undefined,
-      startTime: "",
-      endTime: "",
-      venue: "",
-      guestCount: undefined,
-      selectedPackage: "",
-      selectedAddOns: {},
-      customerName: "",
-      customerEmail: "",
-      customerPhone: ""
-    },
-  })
-
-
-  useEffect(() => {
-
-    // If there is no reservationNo from the URL, stop immediately.
-    if (!businessSlug || !reservationId) return
-
-
-    async function loadReservation() {
-      setIsFetching(true)
-
-      // // Fetch the reservation that matches the reservationNo from the URL.
-      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}`)
-
-      // converts the response into JavaScript data
-      const json = await res.json()
-      // Treat json.data as a Reservation object.
-      const data = json.data as Reservation
-
-      // Replaces the form's current values with fetched data
-      form.reset({
-        // Convert the API date string into a JavaScript Date object for the form.
-        eventDate: new Date(data.eventDate),
-        startTime: data.startTime,
-        endTime: data.endTime,
-        venue: data.venue,
-        guestCount: data.guestCount,
-        selectedPackage: data.selectedPackageName,
-        selectedAddOns: data.selectedAddOns,
-        customerName: data.customerName,
-        customerEmail: data.customerEmail,
-        customerPhone: data.customerPhone
-      })
-
-      // When fetching and form reset is done, remove loading state and add reservation data
-      setIsFetching(false)
-      setReservation(data)
-
-    }
-    // Call loadReservation function
-    loadReservation()
-
-    // reservationNo, form is a dependency array which tells react to run this effect again when these two change.
-  }, [reservationId, businessSlug, form])
-
-
   if (!businessSlug || !reservationId) {
     return <p>Missing route parameters.</p>
   }
 
+  if (isReservationPending) {
+    return <p>Loading reservation...</p>
+  }
 
-  // Show loading while reservation is still fetching
+  if (reservationError) {
+    return <p>Failed to load reservation.</p>
+  }
+
   if (!reservation) {
-    if (isFetching) return <p>Loading</p>;
-    return <p>Reservation not found.</p>;
+    return <p>Reservation not found.</p>
+  }
+
+  if (isOfferingPending) {
+    return <p>Loading offerings...</p>
+  }
+
+  if (offeringsError) {
+    return <p>Failed to load offerings.</p>
+  }
+
+  return (
+    <EditQuotationForm
+      reservation={reservation}
+      offerings={offerings}
+      businessSlug={businessSlug}
+      reservationId={reservationId}
+    />
+  )
+}
+
+   function EditQuotationForm({
+  reservation,
+  offerings,
+  businessSlug,
+  reservationId,
+}: EditQuotationFormProps) {
+
+    // Instantiate navgiate
+  const navigate = useNavigate()
+
+  const selectedAddOnsResult = Object.fromEntries(
+    reservation.selectedAddOns.map((addon: SelectedReservationAddOn) => [addon.addonId, addon.quantity])
+  )
+
+  const defaultValues: QuotationValues = {
+    eventDate: new Date(reservation.eventDate),
+    startTime: reservation.startTime,
+    endTime: reservation.endTime,
+    venue: reservation.venue,
+    guestCount: reservation.guestCount,
+    selectedPackage: reservation.selectedPackageId,
+    selectedAddOns: selectedAddOnsResult,
+    customerName: reservation.customerName,
+    customerEmail: reservation.customerEmail,
+    customerPhone: reservation.customerPhone
   }
 
 
-  const guestCount = form.watch("guestCount") ?? 0
-  const classicPackagePrice = guestCount * 50
-  const vintagePackagePrice = guestCount * 100
+  // Setup from with default values
+  const form = useForm({
+    defaultValues,
 
-  // Data comes from react hook form 
-  async function onSubmit(data: EditQuotationFormValues) {
+    onSubmit: async ({ value }) => {
 
-
-    // if reservationNo is missing, stop the function immediately
-    if (!businessSlug || !reservationId) return
-
-
-    // Takes the values in the form and converts data to what the API requires to submitted.
-    const payload = {
-      eventDate: data.eventDate.toISOString(),
-      guestCount: data.guestCount,
-      selectedPackage: data.selectedPackage,
-    }
-
-
-    // Send the updated reservation data to the backend API.
-    const res = await fetch(
-      `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}`,
-      {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      if (!businessSlug || !reservationId) {
+        console.error("Missing route parameters")
+        return
       }
-    )
+      if (!value.eventDate) {
+        console.error("Event date is required")
+        return
+      }
 
-    if (!res.ok) {
-      throw new Error("Failed to update reservation")
-    }
+      const totals = calculateQuotationTotals(value, offerings)
 
+      const payload = {
+        eventDate: value.eventDate.toISOString(),
+        startTime: value.startTime,
+        endTime: value.endTime,
+        venue: value.venue,
+        guestCount: value.guestCount,
+        selectedPackageId: value.selectedPackage,
+        selectedAddOns: value.selectedAddOns,
+        packageTotal: totals.packageTotal,
+        addOnsTotal: totals.addOnsTotal,
+        grandTotal: totals.grandTotal,
+        customerName: value.customerName,
+        customerEmail: value.customerEmail,
+        customerPhone: value.customerPhone,
+      }
 
-    navigate(`/${businessSlug}/reservation/${reservationId}`)
-  }
+      const res = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      )
 
+      if (!res.ok) {
+        console.error("Failed to update reservation")
+        return
+      }
+
+      navigate(`/${businessSlug}/reservation/${reservationId}`)
+
+    },
+  })
 
 
   return (
     <>
-      <h1>This is the edit quotation</h1>
-      <Link to={`/${businessSlug}/reservation/${reservationId}`}>Back</Link>
-      <form>
-        <EventDetails
-          control={form.control}
-        />
-        <PackageDetails
-          control={form.control}
-          classicPackagePrice={classicPackagePrice}
-          vintagePackagePrice={vintagePackagePrice}
-        />
-
-        <h1>Event Date: {new Date(reservation.eventDate).toLocaleDateString()}</h1>
-        <h1>Number of guests: {reservation.guestCount}</h1>
-        <h1>Package: {reservation.selectedPackage}</h1>
-        Total Price:{" "}{reservation.selectedPackage === "classic" ? classicPackagePrice : vintagePackagePrice}
-
-        <Button type="button" onClick={() => setIsConfirmOpen(true)}>
-          Save Changes
-        </Button>
-
-      </form>
-      <ConfirmDialog
-        open={isConfirmOpen}
-        onOpenChange={setIsConfirmOpen}
-        onConfirm={async () => {
-          await toast.promise(
-            async () => {
-              await form.handleSubmit(onSubmit)()
-              setIsConfirmOpen(false)
-            },
-            {
-              loading: "Updating reservation...",
-              success: "Reservation updated successfully.",
-              error: "Failed to update reservation.",
-              position: "top-center",
-            }
-          )
+      <form
+        onSubmit={(e) => {
+          console.log("Form submit event fired")
+          console.log("Current form values:", form.state.values)
+          e.preventDefault()
+          e.stopPropagation()
+          form.handleSubmit()
         }}
+        className="space-y-6"
+      >
+        <EventDetails form={form} />
+        {/* form.Subscribe watches part of the TanStack form state.
+         The selector receives the full form state and returns only state.values,
+         so this UI re-renders when the form values change. */}
+        <form.Subscribe selector={(state) => state.values}>
+          {(values) => {
+            const totals = calculateQuotationTotals(values, offerings)
 
-      />
 
+            return (
+              <>
+                <PackageDetails
+                  form={form}
+                  packages={offerings.packages}
+                  packagePricing={offerings.packagePricing}
+                  guestCount={totals.guestCount}
 
+                />
+
+                <AddOns
+                  addons={offerings.addons}
+                  form={form}
+                />
+                <SummaryDetails
+                  basePrice={totals.packageTotal}
+                  addOnsPrice={totals.addOnsTotal}
+                  selectedAddOnItems={totals.selectedAddOnItems}
+                  selectedPackageSummary={totals.selectedPackageSummary}
+                />
+
+                <CustomerDetails form={form} />
+
+              </>
+            )
+          }}
+        </form.Subscribe>
+        <Button type="submit">Save Changes</Button>
+      </form>
     </>
+
+
   )
 }
