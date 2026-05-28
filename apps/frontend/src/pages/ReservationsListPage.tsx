@@ -16,6 +16,7 @@ import { CircleCheck, CircleX } from "lucide-react"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { toast } from "sonner"
 import { useState } from "react"
+import { format } from "date-fns"
 
 
 
@@ -23,21 +24,6 @@ import { useState } from "react"
 
 
 export function ReservationsListPage() {
-
-  // Managing server state on our own
-  // const [reservations, setReservations] = useState<Reservation[]>([])
-
-  // useEffect(() => {
-  //   // async means that the function will do something that takes time
-  //   async function loadReservations() {
-  //     // awat means pause this function here until fetch finishes
-  //     const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/reservations`)
-  //     const json = await res.json()
-  //     setReservations(json.data)
-  //   }
-
-  //   loadReservations()
-  // }, [])
 
   const navigate = useNavigate();
   const { businessSlug } = useParams()
@@ -101,12 +87,19 @@ export function ReservationsListPage() {
     console.log("Reservation status updated")
   }
 
+  
+
   return (
     <>
       <h1>All Reservations</h1>
       <div className="space-y-4">
-        {reservations.map((reservation) => (
+        {reservations.map((reservation) => {
 
+        const formattedDate = format(new Date(reservation.eventDate), "EEEE, MMMM d, yyyy")
+        const formattedStartTime = format(new Date(`2000-01-01T${reservation.startTime}`), "h:mm a")
+        const formattedEndTime = format(new Date(`2000-01-01T${reservation.endTime}`), "h:mm a")
+
+          return (
           <Card>
             <CardHeader>
               <Link
@@ -125,21 +118,34 @@ export function ReservationsListPage() {
                 <span className="text-muted-foreground">Status</span>
                 <span className="font-medium">{reservation.reservationStatus}</span>
               </div>
+              
 
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Event Date</span>
-                <span>{reservation.eventDate}</span>
+                <span>{ formattedDate }</span>
+              </div>
+
+               <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Event Time</span>
+                <span>{formattedStartTime } to {formattedEndTime}</span>
               </div>
 
               <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Guest Count</span>
+                <span className="text-muted-foreground">Number of guests</span>
                 <span>{reservation.guestCount}</span>
               </div>
 
               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Package</span>
-                <span>{reservation.selectedPackage}</span>
+                <span>{reservation.selectedPackageName}</span>
               </div>
+
+               <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Total</span>
+                <span>{reservation.packageTotal}</span>
+              </div>
+
+
               {(reservation.reservationStatus === "pending_acceptance" ||
                 reservation.reservationStatus === "pending_verification") && (
                   <div className="space-y-3 pt-3">
@@ -190,9 +196,8 @@ export function ReservationsListPage() {
             </CardContent>
 
           </Card>
-
-
-        ))}
+          )
+        })}
       </div>
 
       <Button type="button" onClick={

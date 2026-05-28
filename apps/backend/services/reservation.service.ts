@@ -17,7 +17,34 @@ export async function getReservationsByBusinessSlug(businessId: string):
 
     const { data: rows, error } = await supabase
         .from('reservations')
-        .select('id,event_date,guest_count,selected_package,status')
+        .select(`
+            id,
+            guest_count,
+            selected_package_id,
+            package_total,
+            addons_total,
+            grand_total,
+            event_date,
+            start_time,
+            end_time,
+            venue,
+            status,
+            payment_method_id,
+            payment_proof_path,
+            rejection_reason,
+            customer_name,
+            customer_email,
+            customer_phone,
+            business_packages ( id, name ),
+            reservation_addons (
+            reservation_id, 
+            addon_id, 
+            quantity,
+            addon_price,
+            addon_name, 
+            business_addons(id, name, price)
+            )
+        `)
         .eq('business_id', businessId)
         .order('created_at', { ascending: false })
 
@@ -30,16 +57,39 @@ export async function getReservationsByBusinessSlug(businessId: string):
             }
         }
     }
-    const reservations: Reservation[] = rows.map((row) => ({
-        id: row.id,
-        reservationStatus: row.status,
-        eventDate: row.event_date,
-        guestCount: row.guest_count,
-        selectedPackage: row.selected_package,
 
-    }))
 
-return { data: reservations }
+    const reservations: Reservation[] = rows.map((row) => {
+        const selectedAddOns = row.reservation_addons.map((addon) => ({
+            addonId: addon.addon_id,
+            addonName: addon.addon_name,
+            addonPrice: addon.addon_price,
+            quantity: addon.quantity
+        }))
+        return {
+            id: row.id,
+            eventDate: row.event_date,
+            startTime: row.start_time,
+            endTime: row.end_time,
+            venue: row.venue,
+            guestCount: row.guest_count,
+            selectedPackageName: row.business_packages?.name ?? "",
+            selectedPackageId: row.selected_package_id,
+            selectedAddOns,
+            packageTotal: row.package_total,
+            addOnsTotal: row.addons_total,
+            grandTotal: row.grand_total,
+            reservationStatus: row.status,
+            paymentMethodId: row.payment_method_id,
+            paymentProofPath: row.payment_proof_path,
+            rejectionReason: row.rejection_reason,
+            customerName: row.customer_name,
+            customerEmail: row.customer_email,
+            customerPhone: row.customer_phone
+        }
+    })
+
+    return { data: reservations }
 }
 
 export async function getSingleReservationByBusinessSlug(businessId: string, reservationId: string):
@@ -259,37 +309,140 @@ export async function updateReservation(businessId: string, body: ReservationFor
     const payload = {
         business_id: businessId,
         event_date: String(body.eventDate),
+        start_time: body.startTime,
+        end_time: body.endTime,
+        venue: body.venue,
         guest_count: Number(body.guestCount),
-        selected_package: body.selectedPackage,
+        selected_package_id: body.selectedPackageId,
+        package_total: body.packageTotal,
+        addons_total: body.addOnsTotal,
+        grand_total: body.grandTotal,
+        customer_name: body.customerName,
+        customer_email: body.customerEmail,
+        customer_phone: body.customerPhone
     }
 
 
-    const { data: rows, error } = await supabase
+    const { data: reservationRows, error: reservationError } = await supabase
         .from('reservations')
         .update(payload)
         .eq('id', reservationId)
         .eq('business_id', businessId)
-        .select('id,event_date,guest_count,selected_package, status')
+        .select(`
+            id,
+            event_date,
+            guest_count,
+            selected_package_id,
+            package_total,
+            addons_total,
+            grand_total,
+            start_time,
+            end_time,
+            venue,
+            status,
+            customer_name,
+            customer_email,
+            customer_phone
+            `)
 
-    if (error || !rows?.length) {
+    if (reservationError || !reservationRows?.length) {
         return {
             error: {
                 message: 'Failed to update reservation',
-                details: error?.message ?? 'No row returned',
+                details: reservationError?.message ?? 'No row returned',
                 status: 500,
             }
         }
     }
     // After the update, Supabase returns an array of rows. Since it is just one reservation, it will just have one row
-    const updatedData = rows[0] as ReservationDbRow
+    const updatedData = reservationRows[0] as ReservationDbRow
+
+    const selectedAddOnsId = Object.entries(body.selectedAddOns).
+        filter((addon) => addon[1] > 0)
+        .map((addon) => addon[0])
+
+    const { data: businessAddOns, error: businessAddOnsError } = await supabase
+        .from('business_addons')
+        .select(`
+        id,
+        name,
+        price
+        `)
+        .in("id", selectedAddOnsId)
+
+    if (businessAddOnsError || !businessAddOns) {
+        return {
+            error: {
+                message: "Failed to fetch business add-ons",
+                details: businessAddOnsError?.message ?? "No add-ons returned",
+                status: 500,
+            }
+        }
+    }
+
+    const selectedAddonsPayload = Object.entries(body.selectedAddOns)
+        .filter((addon) => addon[1] > 0)
+        .map((addon) => {
+            const matchedAddOn = businessAddOns.find(
+                (businessAddOn) => businessAddOn.id === addon[0]
+            )
+            return {
+                reservation_id: updatedData.id,
+                addon_id: addon[0],
+                addon_name: matchedAddOn?.name ?? "",
+                addon_price: matchedAddOn?.price ?? 0,
+                quantity: addon[1],
+            }
+        })
+
+
+    const { error: deleteAddOnError } = await supabase
+        .from('reservation_addons')
+        .delete()
+        .eq("reservation_id", updatedData.id)
+
+    if (deleteAddOnError) {
+        return {
+            error: {
+                message: "Failed to delete existing reservation add-ons",
+                details: deleteAddOnError.message,
+                status: 500,
+            },
+        }
+    }
+
+    if (selectedAddonsPayload.length > 0) {
+        const { error: insertAddOnsError } = await supabase
+            .from("reservation_addons")
+            .insert(selectedAddonsPayload)
+
+        if (insertAddOnsError) {
+            return {
+                error: {
+                    message: "Failed to insert updated reservation add-ons",
+                    details: insertAddOnsError.message,
+                    status: 500,
+                },
+            }
+        }
+    }
+
 
     // Creates a new object in a frontend friendly 
     const updatedReservation: Reservation = {
         id: updatedData.id,
         eventDate: updatedData.event_date,
+        startTime: updatedData.start_time,
+        endTime: updatedData.end_time,
+        venue: updatedData.venue,
         guestCount: updatedData.guest_count,
-        selectedPackage: updatedData.selected_package,
-        reservationStatus: updatedData.status
+        selectedPackageId: updatedData.selected_package_id,
+        packageTotal: updatedData.package_total,
+        addOnsTotal: updatedData.addons_total,
+        grandTotal: updatedData.grand_total,
+        customerName: updatedData.customer_name,
+        customerEmail: updatedData.customer_email,
+        customerPhone: updatedData.customer_phone
     }
 
     return { data: updatedReservation }

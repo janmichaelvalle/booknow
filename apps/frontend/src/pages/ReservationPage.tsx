@@ -72,7 +72,7 @@ export function ReservationPage() {
 
     useEffect(() => {
         console.log("reservation in useEffect:", reservation)
-     
+
         if (reservation?.paymentMethodId) {
             setSelectedPaymentMethodId(reservation.paymentMethodId)
         }
@@ -190,7 +190,22 @@ export function ReservationPage() {
         reservation.reservationStatus === "pending_verification" ||
         reservation.reservationStatus === "confirmed"
 
+    //    {reservation.reservationStatus === "pending_acceptance" && (
+    //             <Button disabled={isPaymentLocked} type="button" onClick={() =>
+    //                 navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
+    //                     state: {
+    //                         eventDate: reservation.eventDate,
+    //                         guestCount: reservation.guestCount,
+    //                         selectedPackage: reservation.selectedPackageName,
+    //                     }
+    //                 })}>
+    //                 Edit quotation
+    //             </Button>
+    //         )}
 
+    function handleEditQuotation() {
+        navigate(`/${businessSlug}/reservation/${reservationId}/edit`)
+    }
 
     return (
         <>
@@ -211,6 +226,8 @@ export function ReservationPage() {
 
             <EventDetailsCard
                 reservation={reservation}
+                canEdit={reservation.reservationStatus === "pending_acceptance"}
+                onEdit={handleEditQuotation}
             />
             {/* <PackageDetailsCard
                 packagePrice={0}
@@ -238,18 +255,7 @@ export function ReservationPage() {
                 )
                 }
             </form>
-            {reservation.reservationStatus === "pending_acceptance" && (
-                <Button disabled={isPaymentLocked} type="button" onClick={() =>
-                    navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
-                        state: {
-                            eventDate: reservation.eventDate,
-                            guestCount: reservation.guestCount,
-                            selectedPackage: reservation.selectedPackageName,
-                        }
-                    })}>
-                    Edit quotation
-                </Button>
-            )}
+
             <ConfirmDialog
                 open={isConfirmOpen}
                 onOpenChange={setIsConfirmOpen}

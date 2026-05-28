@@ -7,12 +7,16 @@ import {
 import { type Reservation } from "@/lib/types"
 import { Calendar, Clock3, MapPin, Users } from "lucide-react"
 import { add, format } from "date-fns"
+import { Button } from "@/components/ui/button"
+import { SquarePen } from 'lucide-react'
 
 type EventDetailsCardProps = {
     reservation: Reservation
+    onEdit: () => void
+    canEdit: boolean
 }
 
-export function EventDetailsCard({ reservation }: EventDetailsCardProps) {
+export function EventDetailsCard({ reservation, onEdit, canEdit }: EventDetailsCardProps) {
     const formattedDate = format(new Date(reservation.eventDate), "EEEE, MMMM d, yyyy")
     const formattedStartTime = format(new Date(`2000-01-01T${reservation.startTime}`), "h:mm a")
     const formattedEndTime = format(new Date(`2000-01-01T${reservation.endTime}`), "h:mm a")
@@ -20,16 +24,24 @@ export function EventDetailsCard({ reservation }: EventDetailsCardProps) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="text-lg uppercase tracking-wide">
-                    Reservation Summary
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg uppercase tracking-wide">
+                        Reservation Summary
+                    </CardTitle>
+
+                    {canEdit && (
+                        <Button type="button" variant="ghost" size="sm" onClick={onEdit}>
+                            <SquarePen  className="h-4 w-4" />
+                            Edit
+                        </Button>
+                    )}
+                </div>
             </CardHeader>
-            
 
             <CardContent className="space-y-5">
                 <h2 className="text-lg font-semibold uppercase tracking-wide text-muted-foreground">
-                        Event Details
-                    </h2>
+                    Event Details
+                </h2>
                 <div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
                     <Calendar className="mt-1 h-5 w-5 text-muted-foreground" />
                     <div>
@@ -81,7 +93,7 @@ export function EventDetailsCard({ reservation }: EventDetailsCardProps) {
                         <span>{addon.addonPrice.toLocaleString()} x {addon.quantity} = ₱ {(addon.quantity * addon.addonPrice).toLocaleString()} </span>
                     </div>
                 ))}
-                
+
 
 
                 <div className="my-4 border-t" />
@@ -91,31 +103,31 @@ export function EventDetailsCard({ reservation }: EventDetailsCardProps) {
                     <span>₱ {reservation.grandTotal.toLocaleString()}</span>
                 </div>
                 <div className="my-8 border-t pt-8">
-  <h2 className="text-lg font-semibold uppercase tracking-wide text-muted-foreground">
-    Customer Details
-  </h2>
-</div>
+                    <h2 className="text-lg font-semibold uppercase tracking-wide text-muted-foreground">
+                        Customer Details
+                    </h2>
+                </div>
 
-<div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
-  <div>
-    <p className="text-sm text-muted-foreground">Full Name</p>
-    <p className="text-lg font-semibold">{reservation.customerName}</p>
-  </div>
-</div>
+                <div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
+                    <div>
+                        <p className="text-sm text-muted-foreground">Full Name</p>
+                        <p className="text-lg font-semibold">{reservation.customerName}</p>
+                    </div>
+                </div>
 
-<div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
-  <div>
-    <p className="text-sm text-muted-foreground">Email Address</p>
-    <p className="text-lg font-semibold">{reservation.customerEmail}</p>
-  </div>
-</div>
+                <div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
+                    <div>
+                        <p className="text-sm text-muted-foreground">Email Address</p>
+                        <p className="text-lg font-semibold">{reservation.customerEmail}</p>
+                    </div>
+                </div>
 
-<div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
-  <div>
-    <p className="text-sm text-muted-foreground">Phone Number</p>
-    <p className="text-lg font-semibold">{reservation.customerPhone}</p>
-  </div>
-</div>
+                <div className="flex items-start gap-4 rounded-2xl bg-muted/40 p-5">
+                    <div>
+                        <p className="text-sm text-muted-foreground">Phone Number</p>
+                        <p className="text-lg font-semibold">{reservation.customerPhone}</p>
+                    </div>
+                </div>
             </CardContent>
         </Card>
     )
