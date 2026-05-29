@@ -1,6 +1,3 @@
-
-
-
 import {
   Card,
   CardContent,
@@ -126,6 +123,11 @@ export function ReservationsListPage() {
               </div>
 
                <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Venue</span>
+                <span>{reservation.venue}</span>
+              </div>
+
+               <div className="flex justify-between gap-4">
                 <span className="text-muted-foreground">Event Time</span>
                 <span>{formattedStartTime } to {formattedEndTime}</span>
               </div>
@@ -140,10 +142,20 @@ export function ReservationsListPage() {
                 <span>{reservation.selectedPackageName}</span>
               </div>
 
+      
                <div className="flex justify-between gap-4">
-                <span className="text-muted-foreground">Total</span>
-                <span>{reservation.packageTotal}</span>
+                <span className="text-muted-foreground">Grand Total</span>
+                <span>₱ {reservation.grandTotal.toLocaleString()}</span>
               </div>
+
+              
+               <div className="flex justify-between gap-4">
+                <span className="text-muted-foreground">Customer Name</span>
+                <span> {reservation.customerName}</span>
+              </div>
+
+
+
 
 
               {(reservation.reservationStatus === "pending_acceptance" ||

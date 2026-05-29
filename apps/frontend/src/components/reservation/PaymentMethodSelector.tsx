@@ -31,9 +31,6 @@ type PaymentMethodSelectorProps = {
 export function PaymentMethodSelector({ paymentMethods, packagePrice, selectedPaymentMethodId, setSelectedPaymentMethodId, selectedFile, setSelectedFile, uploadedProofUrl, disabled }: PaymentMethodSelectorProps) {
 
 
-
-
-
   const selectedPaymentMethod = paymentMethods.find(
     // (method) => method.id === selectedPaymentMethodId
     (paymentMethod) => paymentMethod.id === selectedPaymentMethodId

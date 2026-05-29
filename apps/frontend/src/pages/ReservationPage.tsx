@@ -223,22 +223,12 @@ export function ReservationPage() {
                     reservationStatus={reservation.reservationStatus} />
             </div>
 
-
-            <EventDetailsCard
-                reservation={reservation}
-                canEdit={reservation.reservationStatus === "pending_acceptance"}
-                onEdit={handleEditQuotation}
-            />
-            {/* <PackageDetailsCard
-                packagePrice={0}
-                selectedPackage={reservation.selectedPackageName} 
-            /> */}
-            <form>
+             <form>
                 {reservation.reservationStatus !== "pending_acceptance" &&
                     reservation.reservationStatus !== "booking_rejected" && (
                         <PaymentMethodSelector
                             paymentMethods={paymentMethods}
-                            packagePrice={0}
+                            packagePrice={reservation.grandTotal}
                             selectedPaymentMethodId={selectedPaymentMethodId}
                             setSelectedPaymentMethodId={setSelectedPaymentMethodId}
                             selectedFile={selectedFile}
@@ -255,6 +245,18 @@ export function ReservationPage() {
                 )
                 }
             </form>
+
+
+            <EventDetailsCard
+                reservation={reservation}
+                canEdit={reservation.reservationStatus === "pending_acceptance"}
+                onEdit={handleEditQuotation}
+            />
+            {/* <PackageDetailsCard
+                packagePrice={0}
+                selectedPackage={reservation.selectedPackageName} 
+            /> */}
+           
 
             <ConfirmDialog
                 open={isConfirmOpen}
