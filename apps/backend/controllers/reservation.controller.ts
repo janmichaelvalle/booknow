@@ -1,6 +1,6 @@
 // Import the Hono Context type for the controller's `c` parameter
 import type { Context } from "hono";
-import { createReservation, getSingleReservationByBusinessSlug, getReservationsByBusinessSlug, updateReservation, updateReservationStatus } from "../services/reservation.service.js";
+import { createReservation, getSingleReservationByBusinessSlug, getReservationsByBusinessSlug, updateReservation, updateReservationStatus, submitReservationPayment } from "../services/reservation.service.js";
 import { handleServiceResponse } from "../utils/service-response.js";
 
 export async function getAllReservationsController(c: Context) {
@@ -43,5 +43,24 @@ export async function updateReservationStatusController(c: Context) {
   const { reservationStatus, rejectionReason } = body
 
   const result = await updateReservationStatus(business.id, reservationId, reservationStatus, rejectionReason)
+  return handleServiceResponse(c, result)
+}
+
+export async function submitReservationPaymentController(c: Context) {
+  const business = c.get("business")
+  const reservationId = c.req.param('reservationId')
+  const body = await c.req.parseBody()
+  const paymentMethodId = body["paymentMethodId"]
+  const paymentProof = body["paymentProof"]
+  if (typeof paymentMethodId !== "string" || !(paymentProof instanceof File)) {
+    return c.json(
+      {
+        message: "Invalid payment submission",
+      },
+      400
+    )
+  }
+
+  const result = await submitReservationPayment(business.id, reservationId, paymentMethodId, paymentProof)
   return handleServiceResponse(c, result)
 }

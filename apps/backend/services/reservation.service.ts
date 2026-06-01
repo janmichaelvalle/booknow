@@ -10,6 +10,7 @@ type UpdateReservationStatusBody = Pick<
     "reservationStatus" | "rejectionReason"
 >
 
+
 export async function getReservationsByBusinessSlug(businessId: string):
     // this async function returns a Promise, and when that Promise finishes, the final value will match ServiceResult
     Promise<ServiceResponse<Reservation[]>> {
@@ -483,5 +484,57 @@ export async function updateReservationStatus(businessId: string, reservationId:
 
     return { data: updatedReservationStatus }
 
+
+}
+
+export async function submitReservationPayment(businessId: string, reservationId: Reservation['id'], paymentMethodId: string, paymentProof: File): Promise<ServiceResponse<ReservationDbRow>> {
+
+    const fileExt = paymentProof.name.split(".").pop()
+    const filePath = `${reservationId}/${Date.now()}.${fileExt}`
+
+
+
+    const { error: uploadError } = await supabase.storage
+        .from("payment-proofs")
+        .upload(filePath, paymentProof, {
+            cacheControl: "3600",
+            upsert: false,
+        })
+    if (uploadError) {
+        return {
+            error: {
+                message: "Failed to upload payment proof",
+                details: uploadError.message,
+                status: 500,
+            }
+        }
+    }
+    const reservationPaymentUpdatePayload = {
+        payment_method_id: paymentMethodId,
+        payment_proof_path: filePath,
+        status: "pending_verification"
+    }
+
+
+    const { data: rows, error } = await supabase
+        .from('reservations')
+        .update(reservationPaymentUpdatePayload)
+        .eq('id', reservationId)
+        .eq('business_id', businessId)
+        .select('id,status,payment_method_id, payment_proof_path')
+
+    if (error || !rows?.length) {
+        return {
+            error: {
+                message: "Failed to update reservation payment",
+                details: error?.message ?? "No row returned",
+                status: 500,
+            }
+        }
+    }
+
+    const updatedReservationPayment = rows[0] as ReservationDbRow
+     
+    return { data: updatedReservationPayment }
 
 }

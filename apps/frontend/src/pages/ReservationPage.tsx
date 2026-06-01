@@ -150,33 +150,23 @@ export function ReservationPage() {
             return
         }
 
-        const fileExt = selectedFile.name.split(".").pop()
-        const filePath = `${reservation.id}/${Date.now()}.${fileExt}`
+        const formData = new FormData()
+        formData.append("paymentMethodId", selectedPaymentMethodId)
+        formData.append("paymentProof", selectedFile)
 
-        const { error: uploadError } = await supabase.storage
-            .from("payment-proofs")
-            .upload(filePath, selectedFile, {
-                cacheControl: "3600",
-                upsert: false,
-            })
+        const res = await fetch(
+            `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation/${reservationId}/payment`,
+            {
+                method: "POST",
+                body: formData
+            }
+        )
 
-        if (uploadError) {
-            throw new Error("Upload failed")
+        if (!res.ok) {
+            throw new Error("Failed to submit payment")
         }
+   }
 
-        const { error: updateError } = await supabase
-            .from("reservations")
-            .update({
-                payment_method_id: selectedPaymentMethodId,
-                payment_proof_path: filePath,
-                status: "pending_verification",
-            })
-            .eq("id", reservation.id)
-
-        if (updateError) {
-            throw new Error("Reservation update failed")
-        }
-    }
 
 
     const uploadedProofUrl = reservation.paymentProofPath
@@ -189,19 +179,6 @@ export function ReservationPage() {
     const isPaymentLocked =
         reservation.reservationStatus === "pending_verification" ||
         reservation.reservationStatus === "confirmed"
-
-    //    {reservation.reservationStatus === "pending_acceptance" && (
-    //             <Button disabled={isPaymentLocked} type="button" onClick={() =>
-    //                 navigate(`/${businessSlug}/reservation/${reservationId}/edit`, {
-    //                     state: {
-    //                         eventDate: reservation.eventDate,
-    //                         guestCount: reservation.guestCount,
-    //                         selectedPackage: reservation.selectedPackageName,
-    //                     }
-    //                 })}>
-    //                 Edit quotation
-    //             </Button>
-    //         )}
 
     function handleEditQuotation() {
         navigate(`/${businessSlug}/reservation/${reservationId}/edit`)
@@ -223,7 +200,7 @@ export function ReservationPage() {
                     reservationStatus={reservation.reservationStatus} />
             </div>
 
-             <form>
+            <form>
                 {reservation.reservationStatus !== "pending_acceptance" &&
                     reservation.reservationStatus !== "booking_rejected" && (
                         <PaymentMethodSelector
@@ -256,7 +233,7 @@ export function ReservationPage() {
                 packagePrice={0}
                 selectedPackage={reservation.selectedPackageName} 
             /> */}
-           
+
 
             <ConfirmDialog
                 open={isConfirmOpen}
