@@ -20,6 +20,7 @@ type EventDetailsProps = {
 
 
 export function EventDetails({ form }: EventDetailsProps) {
+  
 
   return (
 

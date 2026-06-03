@@ -12,6 +12,12 @@ import { useQuery } from "@tanstack/react-query"
 import { CustomerDetails } from "@/components/quotation/CustomerDetails"
 import { calculateQuotationTotals } from "@/lib/quotation";
 
+import { useState } from "react";
+
+import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { toast } from "sonner"
+
+
 
 // The quotationSchema validates the user inputs
 const quotationSchema = z.object({
@@ -33,6 +39,8 @@ export function QuotationPage() {
 
   const navigate = useNavigate()
   const { businessSlug } = useParams()
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+
 
   const defaultValues: QuotationValues = {
     eventDate: undefined,
@@ -40,7 +48,7 @@ export function QuotationPage() {
     endTime: "",
     venue: "",
     guestCount: undefined,
-    selectedPackage : "",
+    selectedPackage: "",
     selectedAddOns: {},
     customerName: "",
     customerEmail: "",
@@ -77,6 +85,7 @@ export function QuotationPage() {
     // Everytime a form values changes, checks the quotationSchema
     validators: {
       onChange: quotationSchema,
+      onSubmit: quotationSchema,
     },
     onSubmit: async ({ value }) => {
       console.log("Submit reached")
@@ -89,10 +98,10 @@ export function QuotationPage() {
       if (!value.eventDate) {
         console.error("Event date is required")
         return
-      } 
+      }
 
       const totals = calculateQuotationTotals(value, offerings)
-   
+
 
       const payload = {
         eventDate: value.eventDate.toISOString(),
@@ -136,7 +145,15 @@ export function QuotationPage() {
     },
   })
 
+  async function handleReserveClick() {
+    await form.validate('submit')
 
+    if (!form.state.isFieldsValid) {
+      return
+    }
+
+    setIsConfirmOpen(true)
+  }
   return (
     <>
       <form
@@ -155,7 +172,7 @@ export function QuotationPage() {
         so this UI re-renders when the form values change. */}
         <form.Subscribe selector={(state) => state.values}>
           {(values) => {
-           const totals = calculateQuotationTotals(values, offerings)
+            const totals = calculateQuotationTotals(values, offerings)
 
 
             return (
@@ -167,7 +184,7 @@ export function QuotationPage() {
                   guestCount={totals.guestCount}
 
                 />
-             
+
                 <AddOns
                   addons={offerings.addons}
                   form={form}
@@ -185,8 +202,27 @@ export function QuotationPage() {
             )
           }}
         </form.Subscribe>
-        <Button type="submit">Reserve Date</Button>
+        <Button type="button" onClick={handleReserveClick}>Reserve Date</Button>
       </form>
+      <ConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        onConfirm={async () => {
+          await toast.promise(
+            async () => {
+              await form.handleSubmit()
+              setIsConfirmOpen(false)
+            },
+            {
+              loading: "Submitting your reservation...",
+              success: "Your reservation has been submitted successfully",
+              error: "Something went wrong. Please try again.",
+              position: "top-center",
+            }
+          )
+        }}
+
+      />
     </>
 
 
