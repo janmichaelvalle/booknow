@@ -21,7 +21,10 @@ import { toast } from "sonner"
 
 // The quotationSchema validates the user inputs
 const quotationSchema = z.object({
-  eventDate: z.date(),
+  eventDate: z.date({
+    error: (issue) =>
+      issue.input === undefined ? "Event date is required" : "Invalid date",
+  }),
   startTime: z.string().min(1, "Start time is required"),
   endTime: z.string().min(1, "End time is required"),
   venue: z.string().min(1, "Venue is required"),
@@ -148,7 +151,7 @@ export function QuotationPage() {
   async function handleReserveClick() {
     await form.validate('submit')
 
-    if (!form.state.isFieldsValid) {
+    if (!form.state.isFormValid) {
       return
     }
 
@@ -162,7 +165,7 @@ export function QuotationPage() {
           console.log("Current form values:", form.state.values)
           e.preventDefault()
           e.stopPropagation()
-          form.handleSubmit()
+          handleReserveClick()
         }}
         className="space-y-6"
       >

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
-import { CalendarDays, MapPin, Users,  CalendarClock } from "lucide-react"
+import { CalendarDays, MapPin, Users, CalendarClock } from "lucide-react"
 
 
 
@@ -20,7 +20,7 @@ type EventDetailsProps = {
 
 
 export function EventDetails({ form }: EventDetailsProps) {
-  
+
 
   return (
 
@@ -34,44 +34,56 @@ export function EventDetails({ form }: EventDetailsProps) {
 
         <Field>
           <FieldLabel className="flex items-center gap-2">
-            <CalendarClock  className="h-4 w-4" />
+            <CalendarClock className="h-4 w-4" />
             Date and Time
           </FieldLabel>
 
           <p className="text-sm text-muted-foreground">
             Choose your preferred event date and available time slot.
           </p>
-        
+
           <form.Field name="eventDate">
-            {(field: any) => (
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !field.state.value && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarDays className="mr-2 h-4 w-4" />
-                    {field.state.value ? format(field.state.value, "PPP") : "Pick a date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={field.state.value}
-                    disabled={[{ before: new Date() }]}
-                    onSelect={(newDate) => {
-                      if (newDate) {
-                        field.handleChange(newDate)
-                      }
-                    }}
-                  />
-                </PopoverContent>
-              </Popover>
-            )}
+          {(field: any) => {
+            const shouldShowError =
+              field.state.meta.isTouched || form.state.submissionAttempts > 0
+
+            return (
+              <Field data-invalid={!field.state.meta.isValid && shouldShowError}>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !field.state.value && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarDays className="mr-2 h-4 w-4" />
+                      {field.state.value ? format(field.state.value, "PPP") : "Pick a date"}
+                    </Button>
+                  </PopoverTrigger>
+
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={field.state.value}
+                      disabled={[{ before: new Date() }]}
+                      onSelect={(newDate) => {
+                        if (newDate) {
+                          field.handleChange(newDate)
+                        }
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+
+                {shouldShowError && field.state.meta.errors.length > 0 && (
+                  <FieldError errors={field.state.meta.errors} />
+                )}
+              </Field>
+            )
+          }}
           </form.Field>
 
           <div className="border-t pt-4">
@@ -158,7 +170,7 @@ export function EventDetails({ form }: EventDetailsProps) {
                 onChange={(e) => {
                   const raw = e.target.value
                   const num = raw === "" ? undefined : Number(raw)
-                
+
                   field.handleChange(num !== undefined && num < 1 ? 1 : num)
                 }}
               />
