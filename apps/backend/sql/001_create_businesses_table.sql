@@ -7,6 +7,12 @@ create table if not exists public.businesses (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   slug text not null unique,
+  description text,
+  phone text,
+  email text,
+  facebook_url text,
+  instagram_url text,
+  logo_url text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
 
@@ -33,6 +39,24 @@ execute function public.set_updated_at();
 create index if not exists businesses_slug_idx
   on public.businesses (slug);
 
-insert into public.businesses (name, slug)
-values ('Tipsy Tap Mobile Bar', 'tipsy-tap')
+insert into public.businesses (
+  name,
+  slug,
+  description,
+  phone,
+  email,
+  facebook_url,
+  instagram_url,
+  logo_url
+)
+values (
+  'Tipsy Tap Mobile Bar',
+  'tipsy-tap',
+  'Mobile bar service for weddings, birthdays, and private events.',
+  '09171234567',
+  'hello@tipsytap.com',
+  'https://facebook.com/tipsytap',
+  'https://instagram.com/tipsytap',
+  null
+)
 on conflict (slug) do nothing;

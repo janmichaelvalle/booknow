@@ -5,7 +5,7 @@ import type { BusinessResult } from "../lib/types.js";
 export async function getBusinessBySlugOrError(slug: string): Promise<BusinessResult> {
   const { data, error } = await supabase
     .from('businesses')
-    .select('id,name,slug')
+    .select('id, name, slug, description, phone, email, facebook_url, instagram_url, logo_url')
     .eq('slug', slug)
     .maybeSingle()
 

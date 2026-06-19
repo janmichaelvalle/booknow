@@ -8,3 +8,8 @@ export async function getAllOfferingsController(c: Context) {
   return handleServiceResponse(c, result)
 
 }
+
+export async function getBusinessInformation(c: Context) {
+  const business = c.get("business")
+  return handleServiceResponse(c, { data: business })
+}

@@ -3,6 +3,12 @@ export type BusinessRow = {
   id: string
   name: string
   slug: string
+  description: string | null
+  phone: string | null
+  email: string | null
+  facebook_url: string | null
+  instagram_url: string | null
+  logo_url: string | null
 }
 
 export type BusinessResult =
