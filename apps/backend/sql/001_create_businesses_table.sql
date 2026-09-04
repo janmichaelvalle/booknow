@@ -57,6 +57,6 @@ values (
   'hello@tipsytap.com',
   'https://facebook.com/tipsytap',
   'https://instagram.com/tipsytap',
-  null
+  'https://api.dicebear.com/10.x/initials/svg?seed=Felix'
 )
 on conflict (slug) do nothing;

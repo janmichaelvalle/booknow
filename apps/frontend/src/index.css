@@ -121,3 +121,70 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Geoapify venue autocomplete */
+.venue-autocomplete {
+  width: 100%;
+}
+
+.venue-autocomplete .geoapify-geocoder-autocomplete-container,
+.venue-autocomplete .geoapify-input-wrapper {
+  width: 100%;
+}
+
+.venue-autocomplete .geoapify-autocomplete-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 2.25rem 0 0.75rem;
+
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 2px);
+  outline: none;
+
+  background: transparent;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: normal;
+
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+.venue-autocomplete .geoapify-autocomplete-input::placeholder {
+  color: var(--muted-foreground);
+}
+
+.venue-autocomplete .geoapify-autocomplete-input:focus {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+}
+
+/* Suggestions dropdown */
+.venue-autocomplete .geoapify-autocomplete-items {
+  overflow: hidden;
+  margin-top: 0.25rem;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+
+  background: var(--popover);
+  color: var(--popover-foreground);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 10%);
+}
+
+.venue-autocomplete .geoapify-autocomplete-items > div {
+  padding: 0.75rem;
+}
+
+.venue-autocomplete .geoapify-autocomplete-items > div:hover,
+.venue-autocomplete .geoapify-autocomplete-items .active {
+  background: var(--accent);
+  color: var(--accent-foreground);
+}
+
+.venue-autocomplete .geoapify-close-button {
+  right: 0.5rem;
+  color: var(--muted-foreground);
+}
