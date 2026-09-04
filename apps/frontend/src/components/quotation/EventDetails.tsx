@@ -1,6 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-
+// import { CoverPhoto } from "./BusinessHeader"
 import { Field, FieldLabel, FieldError } from "../ui/field"
 
 
@@ -23,11 +23,15 @@ export function EventDetails({ form }: EventDetailsProps) {
 
 
   return (
-
+    <>
+    {/* <CoverPhoto /> */}
+    
     <Card>
+
       <CardHeader>
         <CardTitle>Event Details</CardTitle>
         <CardDescription>Tell us about your event</CardDescription>
+        
 
       </CardHeader>
       <CardContent className="space-y-5">
@@ -185,6 +189,7 @@ export function EventDetails({ form }: EventDetailsProps) {
       </CardContent>
 
     </Card>
+    </>
   )
 
 }

@@ -16,6 +16,8 @@ import { useState } from "react";
 
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { toast } from "sonner"
+import { type BusinessInformation } from "@/lib/types";
+import { BusinessHeader } from "@/components/quotation/BusinessHeader";
 
 
 
@@ -57,6 +59,22 @@ export function QuotationPage() {
     customerEmail: "",
     customerPhone: ""
   }
+
+  const { data: business } = useQuery({
+    queryKey: ["business", businessSlug],
+    queryFn: async (): Promise<BusinessInformation> => {
+      const res = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}`
+      )
+      if (!res.ok) {
+        throw new Error("Failed to fetch business information")
+      }
+      const result = await res.json()
+      return result.data
+    },
+
+    enabled: !!businessSlug,
+  })
 
   const { data: offerings, isPending: isOfferingPending, error: offeringsError } = useQuery({
     queryKey: ["offerings", businessSlug],
@@ -169,6 +187,13 @@ export function QuotationPage() {
         }}
         className="space-y-6"
       >
+        {business && (
+          <BusinessHeader
+            logoUrl={business.logo_url ?? ""}
+            businessName={business.name}
+            description={business.description ?? ""}
+          />
+        )}
         <EventDetails form={form} />
         {/* form.Subscribe watches part of the TanStack form state.
         The selector receives the full form state and returns only state.values,
@@ -205,7 +230,7 @@ export function QuotationPage() {
             )
           }}
         </form.Subscribe>
-        <Button type="button" onClick={handleReserveClick}>Reserve Date</Button>
+        <Button type="button" onClick={handleReserveClick}>Get My Quotation</Button>
       </form>
       <ConfirmDialog
         open={isConfirmOpen}

@@ -99,3 +99,10 @@ export type SelectedPackageSummary = {
   basePrice: number
 }
 
+
+export type BusinessInformation = {
+  name: string
+  description: string | null
+  logo_url: string | null
+}
+
