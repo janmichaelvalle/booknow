@@ -2,11 +2,10 @@ import { EventDetails } from "@/components/quotation/EventDetails";
 import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { AddOns } from "@/components/quotation/AddOns";
 import { SummaryDetails } from "@/components/quotation/SummaryDetails";
-import { Button } from "@/components/ui/button"
 
 import * as z from "zod"
 import { useNavigate, useParams } from "react-router-dom"
-import { type Offerings, type QuotationValues } from "@/lib/types"
+import { type Offerings, type QuotationValues, type CoverageResult } from "@/lib/types"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
 import { CustomerDetails } from "@/components/quotation/CustomerDetails"
@@ -18,7 +17,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { toast } from "sonner"
 import { type BusinessInformation } from "@/lib/types";
 import { BusinessHeader } from "@/components/quotation/BusinessHeader";
-
+import { StickyOrderSummary } from "@/components/quotation/StickyOrderSummary"
 
 
 // The quotationSchema validates the user inputs
@@ -41,6 +40,9 @@ const quotationSchema = z.object({
 
 
 export function QuotationPage() {
+
+  const [venueCoverage, setVenueCoverage] =
+  useState<CoverageResult | null>(null)
 
   const navigate = useNavigate()
   const { businessSlug } = useParams()
@@ -185,7 +187,7 @@ export function QuotationPage() {
           e.stopPropagation()
           handleReserveClick()
         }}
-        className="space-y-6"
+        className="space-y-6 pb-40"
       >
         {business && (
           <BusinessHeader
@@ -194,7 +196,11 @@ export function QuotationPage() {
             description={business.description ?? ""}
           />
         )}
-        <EventDetails form={form} />
+        <EventDetails
+          form={form}
+          venueCoverage={venueCoverage}
+          onVenueCoverageChange={setVenueCoverage}
+        />
         {/* form.Subscribe watches part of the TanStack form state.
         The selector receives the full form state and returns only state.values,
         so this UI re-renders when the form values change. */}
@@ -217,20 +223,20 @@ export function QuotationPage() {
                   addons={offerings.addons}
                   form={form}
                 />
-                <SummaryDetails
-                  basePrice={totals.packageTotal}
-                  addOnsPrice={totals.addOnsTotal}
-                  selectedAddOnItems={totals.selectedAddOnItems}
-                  selectedPackageSummary={totals.selectedPackageSummary}
-                />
-
+             
                 <CustomerDetails form={form} />
+                 <StickyOrderSummary
+  basePrice={totals.packageTotal}
+  addOnsPrice={totals.addOnsTotal}
+  transportationFee={venueCoverage?.transportationFee ?? 0}
+  onContinue={handleReserveClick}
+/>
+
 
               </>
             )
           }}
         </form.Subscribe>
-        <Button type="button" onClick={handleReserveClick}>Get My Quotation</Button>
       </form>
       <ConfirmDialog
         open={isConfirmOpen}

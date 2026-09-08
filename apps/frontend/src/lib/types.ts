@@ -1,3 +1,10 @@
+export type CoverageResult = {
+  isCovered: boolean
+  transportationFee: number | null
+}
+
+
+
 export type QuotationValues = {
   eventDate: Date | undefined
   startTime: string
@@ -6,7 +13,7 @@ export type QuotationValues = {
   guestCount: number | undefined
   selectedPackage: string
   // Record stores the add-on ID as the object key and quantity as the object value
-  selectedAddOns: Record<string, number>
+  selectedAddOns: Record<string, number>,
   customerName: string
   customerEmail: string
   customerPhone: string

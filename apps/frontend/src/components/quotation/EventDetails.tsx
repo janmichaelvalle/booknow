@@ -1,7 +1,13 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-// import { CoverPhoto } from "./BusinessHeader"
-import { Field, FieldLabel, FieldError } from "../ui/field"
+import { useState } from "react"
+
+import {
+  Field,
+  FieldLabel,
+  FieldDescription,
+  FieldError,
+} from "../ui/field"
 
 
 import { Input } from "@/components/ui/input"
@@ -12,14 +18,21 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils"
 import { CalendarDays, MapPin, Users, CalendarClock } from "lucide-react"
 
-import { VenueAutocomplete } from "./VenueAutocomplete"
+import {
+  VenueAutocomplete,
+  type CoverageResult
+} from "./VenueAutoComplete"
 
 type EventDetailsProps = {
   form: any
+  venueCoverage: CoverageResult | null
+  onVenueCoverageChange: (coverage: CoverageResult) => void
 }
 
 
-export function EventDetails({ form }: EventDetailsProps) {
+export function EventDetails({ form, venueCoverage,
+  onVenueCoverageChange, }: EventDetailsProps) {
+
 
 
   return (
@@ -140,8 +153,37 @@ export function EventDetails({ form }: EventDetailsProps) {
                 </FieldLabel>
                 <VenueAutocomplete
                   venue={field.state.value ?? ""}
-                  onAddressSelect={(address) => field.handleChange(address)}
+                  onVenueSelect={(address, coverage) => {
+                    onVenueCoverageChange(coverage)
+                    if (coverage.isCovered) {
+                      field.handleChange(address)
+                    } else {
+                      field.handleChange("")
+                    }
+                  }}
                 />
+                {venueCoverage?.isCovered === false && (
+                  <FieldError>
+                    Sorry, this venue is outside the supplier&apos;s Metro Manila coverage area.
+                  </FieldError>
+                )}
+
+                {venueCoverage?.isCovered &&
+                  venueCoverage.transportationFee !== null &&
+                  venueCoverage.transportationFee > 0 && (
+                    <FieldDescription className="text-amber-600">
+                      An additional ₱
+                      {venueCoverage.transportationFee.toLocaleString()}
+                      {" "}transportation charge applies to this location.
+                    </FieldDescription>
+                  )}
+
+                {venueCoverage?.isCovered &&
+                  venueCoverage.transportationFee === 0 && (
+                    <FieldDescription className="text-green-600">
+                      This venue is within the service area with no additional transportation charge.
+                    </FieldDescription>
+                  )}
 
                 {field.state.meta.isTouched && field.state.meta.errors.length > 0 && (
                   <FieldError errors={field.state.meta.errors} />

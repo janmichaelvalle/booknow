@@ -4,19 +4,19 @@ import type { SelectedAddOnItem, SelectedPackageSummary } from "@/lib/types"
 type SummaryDetailsProps = {
   basePrice: number
   addOnsPrice: number
+  transportationFee: number
   selectedAddOnItems: SelectedAddOnItem[]
   selectedPackageSummary: SelectedPackageSummary
-
-
 }
 
 export function SummaryDetails({
   basePrice,
   addOnsPrice,
+  transportationFee,
   selectedAddOnItems,
-  selectedPackageSummary
+  selectedPackageSummary,
 }: SummaryDetailsProps) {
-  const totalPrice = basePrice + addOnsPrice
+  const totalPrice = basePrice + addOnsPrice + transportationFee
 
   return (
     <Card>
@@ -26,23 +26,28 @@ export function SummaryDetails({
 
       <CardContent className="space-y-4">
         <div className="space-y-2">
-  <p className="text-sm font-medium text-muted-foreground">Package</p>
-  <div className="flex items-center justify-between">
-    <span>{selectedPackageSummary.name} ({selectedPackageSummary.guestCount} guests)</span>
-    <span>₱ {selectedPackageSummary.basePrice.toLocaleString()}</span>
-  </div>
-</div>
+          <p className="text-sm font-medium text-muted-foreground">Package</p>
+          <div className="flex items-center justify-between">
+            <span>{selectedPackageSummary.name} ({selectedPackageSummary.guestCount} guests)</span>
+            <span>₱ {selectedPackageSummary.basePrice.toLocaleString()}</span>
+          </div>
+        </div>
 
-       <div className="space-y-2">
-  <p className="text-sm font-medium text-muted-foreground">Add-ons</p>
-  {selectedAddOnItems.map((item) => (
-    <div key={item.id} className="flex items-center justify-between">
-      <span>{item.name}</span>
-      <span>₱ {item.price.toLocaleString()} x {item.quantity} = ₱ {item.lineTotal.toLocaleString()}</span>
-    </div>
-  ))}
-</div>
-        
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">Add-ons</p>
+          {selectedAddOnItems.map((item) => (
+            <div key={item.id} className="flex items-center justify-between">
+              <span>{item.name}</span>
+              <span>₱ {item.price.toLocaleString()} x {item.quantity} = ₱ {item.lineTotal.toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center justify-between">
+          <span>Transportation fee</span>
+          <span>₱ {transportationFee.toLocaleString()}</span>
+        </div>
+
+
 
         <div className="flex items-center justify-between border-t pt-4 font-semibold">
           <span>Total</span>
