@@ -4,14 +4,14 @@ type StickyOrderSummaryProps = {
   basePrice: number
   addOnsPrice: number
   transportationFee: number
-  onContinue: () => void
+  onGetMyQuotationButtonClick: () => void
 }
 
 export function StickyOrderSummary({
   basePrice,
   addOnsPrice,
   transportationFee,
-  onContinue,
+  onGetMyQuotationButtonClick,
 }: StickyOrderSummaryProps) {
     const totalPrice = basePrice + addOnsPrice + transportationFee
 
@@ -24,7 +24,7 @@ export function StickyOrderSummary({
         <Button
           type="button"
           className="w-full"
-          onClick={onContinue}
+          onClick={onGetMyQuotationButtonClick}
         >
           Get My Quotation — ₱{totalPrice.toLocaleString()}
         </Button>

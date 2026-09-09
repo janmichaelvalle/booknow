@@ -2,13 +2,14 @@ import { EventDetails } from "@/components/quotation/EventDetails";
 import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { AddOns } from "@/components/quotation/AddOns";
 import { SummaryDetails } from "@/components/quotation/SummaryDetails";
+import { CustomerDetailsDialog } from "@/components/quotation/CustomerDetailsDialog";
 
 import * as z from "zod"
 import { useNavigate, useParams } from "react-router-dom"
 import { type Offerings, type QuotationValues, type CoverageResult } from "@/lib/types"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
-import { CustomerDetails } from "@/components/quotation/CustomerDetails"
+
 import { calculateQuotationTotals } from "@/lib/quotation";
 
 import { useState } from "react";
@@ -20,7 +21,7 @@ import { BusinessHeader } from "@/components/quotation/BusinessHeader";
 import { StickyOrderSummary } from "@/components/quotation/StickyOrderSummary"
 
 
-// The quotationSchema validates the user inputs
+// The quotationSchema validates the user inputs 
 const quotationSchema = z.object({
   eventDate: z.date({
     error: (issue) =>
@@ -37,16 +38,27 @@ const quotationSchema = z.object({
   customerPhone: z.string().min(1, "Phone number is required"),
 })
 
+const quotationDetailsSchema = quotationSchema.pick({
+  eventDate: true,
+  startTime: true,
+  endTime: true,
+  venue: true,
+  guestCount: true,
+  selectedPackage: true,
+})
+
+
 
 
 export function QuotationPage() {
 
   const [venueCoverage, setVenueCoverage] =
-  useState<CoverageResult | null>(null)
+    useState<CoverageResult | null>(null)
 
   const navigate = useNavigate()
   const { businessSlug } = useParams()
   const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [isCustomerDetailsOpen, setIsCustomerDetailsOpen] = useState(false)
 
 
   const defaultValues: QuotationValues = {
@@ -107,7 +119,7 @@ export function QuotationPage() {
     defaultValues: defaultValues,
     // Everytime a form values changes, checks the quotationSchema
     validators: {
-      onChange: quotationSchema,
+      // onChange: quotationSchema,
       onSubmit: quotationSchema,
     },
     onSubmit: async ({ value }) => {
@@ -168,6 +180,55 @@ export function QuotationPage() {
     },
   })
 
+  
+
+  function handleGetMyQuotationClick() {
+    const result = quotationDetailsSchema.safeParse(form.state.values)
+
+
+    if (!result.success) {
+      const fieldLabels: Record<string, string> = {
+        eventDate: "event date",
+        startTime: "start time",
+        endTime: "end time",
+        venue: "venue",
+        guestCount: "number of guests",
+        selectedPackage: "package",
+      }
+
+      const missingFields = [
+        ...new Set(
+          result.error.issues.map((issue) => {
+            const fieldName = String(issue.path[0])
+            return fieldLabels[fieldName] ?? fieldName
+          })
+        ),
+      ]
+
+      const formattedFields = new Intl.ListFormat("en", {
+        style: "long",
+        type: "conjunction",
+      }).format(missingFields)
+
+      toast.error(`Please provide the ${formattedFields}.`, {
+        position: "top-center",
+      })
+
+      return
+    }
+
+    if (!venueCoverage?.isCovered) {
+      toast.error("Please select a venue within the service area", {
+        position: "top-center",
+      })
+
+      return
+    }
+    
+    setIsCustomerDetailsOpen(true)
+  }
+
+
   async function handleReserveClick() {
     await form.validate('submit')
 
@@ -177,6 +238,9 @@ export function QuotationPage() {
 
     setIsConfirmOpen(true)
   }
+
+
+
   return (
     <>
       <form
@@ -216,21 +280,27 @@ export function QuotationPage() {
                   packages={offerings.packages}
                   packagePricing={offerings.packagePricing}
                   guestCount={totals.guestCount}
-
                 />
 
                 <AddOns
                   addons={offerings.addons}
                   form={form}
                 />
-             
-                <CustomerDetails form={form} />
-                 <StickyOrderSummary
-  basePrice={totals.packageTotal}
-  addOnsPrice={totals.addOnsTotal}
-  transportationFee={venueCoverage?.transportationFee ?? 0}
-  onContinue={handleReserveClick}
-/>
+
+
+                <StickyOrderSummary
+                  basePrice={totals.packageTotal}
+                  addOnsPrice={totals.addOnsTotal}
+                  transportationFee={venueCoverage?.transportationFee ?? 0}
+                  onGetMyQuotationButtonClick={handleGetMyQuotationClick}
+                />
+
+                <CustomerDetailsDialog
+                  form={form}
+                  onCreateMyQuotationButtonClick={handleReserveClick}
+                  open={isCustomerDetailsOpen}
+                  onOpenChange={setIsCustomerDetailsOpen}
+                />
 
 
               </>
