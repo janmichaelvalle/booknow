@@ -36,7 +36,7 @@ export function CustomerDetailsDialog({
      type='button'
      onClick={onCreateMyQuotationButtonClick}
      >
-      Create My Quotation
+      Get My Quotation
       </Button>
   </DialogContent>
 

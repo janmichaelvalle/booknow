@@ -229,16 +229,29 @@ export function QuotationPage() {
   }
 
 
-  async function handleReserveClick() {
-    await form.validate('submit')
+  async function handleCreateMyQuotationClick() {
+  await form.validate("submit")
 
-    if (!form.state.isFormValid) {
-      return
-    }
+  if (!form.state.isFormValid) {
+    toast.error("Please provide your complete customer details.", {
+      position: "top-center",
+    })
 
-    setIsConfirmOpen(true)
+    return
   }
 
+  await toast.promise(
+    async () => {
+      await form.handleSubmit()
+    },
+    {
+      loading: "Creating your quotation...",
+      success: "Your quotation was created successfully.",
+      error: "Something went wrong. Please try again.",
+      position: "top-center",
+    }
+  )
+}
 
 
   return (
@@ -249,7 +262,7 @@ export function QuotationPage() {
           console.log("Current form values:", form.state.values)
           e.preventDefault()
           e.stopPropagation()
-          handleReserveClick()
+          handleCreateMyQuotationClick()
         }}
         className="space-y-6 pb-40"
       >
@@ -297,7 +310,7 @@ export function QuotationPage() {
 
                 <CustomerDetailsDialog
                   form={form}
-                  onCreateMyQuotationButtonClick={handleReserveClick}
+                  onCreateMyQuotationButtonClick={handleCreateMyQuotationClick}
                   open={isCustomerDetailsOpen}
                   onOpenChange={setIsCustomerDetailsOpen}
                 />
