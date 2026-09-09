@@ -46,6 +46,7 @@ export type Reservation = {
   customerName: string
   customerEmail: string
   customerPhone: string
+  transportationFee: number
 }
 
 export type PaymentMethodCategory =

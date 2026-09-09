@@ -65,6 +65,7 @@ export type ReservationDbRow = {
   selected_package_id: SelectedPackageId
   package_total: number
   addons_total: number
+  transportation_fee: number
   grand_total: number
   status: string
   payment_method_id: string | null
@@ -103,6 +104,7 @@ export type Reservation = {
   customerName: string
   customerEmail: string
   customerPhone: string
+  transportationFee: number
 }
 
 export type ReservationFormBody = {
@@ -116,6 +118,7 @@ export type ReservationFormBody = {
   addOnsTotal: number
   grandTotal: number
   selectedAddOns: Record<string, number>
+  transportationFee: number
   customerName: string
   customerEmail: string
   customerPhone: string

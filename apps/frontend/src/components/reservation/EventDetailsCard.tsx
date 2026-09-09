@@ -26,7 +26,7 @@ export function EventDetailsCard({ reservation, onEdit, canEdit }: EventDetailsC
             <CardHeader>
                 <div className="flex items-center justify-between">
                     <CardTitle className="text-lg uppercase tracking-wide">
-                        Reservation Summary
+                        Your Quotation
                     </CardTitle>
 
                     {canEdit && (
@@ -92,7 +92,12 @@ export function EventDetailsCard({ reservation, onEdit, canEdit }: EventDetailsC
                         <span className="text-muted-foreground">{addon.addonName}</span>
                         <span>{addon.addonPrice.toLocaleString()} x {addon.quantity} = ₱ {(addon.quantity * addon.addonPrice).toLocaleString()} </span>
                     </div>
+                    
                 ))}
+                <div className="flex items-center justify-between text-lg">
+                    <span className="text-muted-foreground">Transporation fee</span>
+                    <span> ₱ {reservation.transportationFee} </span>
+                </div>
 
 
 

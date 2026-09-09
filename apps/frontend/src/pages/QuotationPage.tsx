@@ -1,7 +1,7 @@
 import { EventDetails } from "@/components/quotation/EventDetails";
 import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { AddOns } from "@/components/quotation/AddOns";
-import { SummaryDetails } from "@/components/quotation/SummaryDetails";
+
 import { CustomerDetailsDialog } from "@/components/quotation/CustomerDetailsDialog";
 
 import * as z from "zod"
@@ -135,7 +135,9 @@ export function QuotationPage() {
         return
       }
 
+      const transportationFee = venueCoverage?.transportationFee ?? 0
       const totals = calculateQuotationTotals(value, offerings)
+      const grandTotal = totals.grandTotal + transportationFee
 
 
       const payload = {
@@ -148,7 +150,8 @@ export function QuotationPage() {
         selectedAddOns: value.selectedAddOns,
         packageTotal: totals.packageTotal,
         addOnsTotal: totals.addOnsTotal,
-        grandTotal: totals.grandTotal,
+        transportationFee: transportationFee,
+        grandTotal: grandTotal,
         customerName: value.customerName,
         customerEmail: value.customerEmail,
         customerPhone: value.customerPhone,

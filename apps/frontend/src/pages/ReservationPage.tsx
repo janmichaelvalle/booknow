@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { toast } from "sonner"
+import { BusinessHeader } from "@/components/quotation/BusinessHeader";
 
 
 
@@ -33,6 +34,22 @@ export function ReservationPage() {
     let statusDescription = ""
     const [isConfirmOpen, setIsConfirmOpen] = useState(false)
     const queryClient = useQueryClient()
+
+      const { data: business } = useQuery({
+        queryKey: ["business", businessSlug],
+        queryFn: async (): Promise<BusinessInformation> => {
+          const res = await fetch(
+            `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}`
+          )
+          if (!res.ok) {
+            throw new Error("Failed to fetch business information")
+          }
+          const result = await res.json()
+          return result.data
+        },
+    
+        enabled: !!businessSlug,
+      })
 
 
 
@@ -186,19 +203,27 @@ export function ReservationPage() {
 
     return (
         <>
-            <Link to={`/${businessSlug}/reservations`}>Back</Link>
-            <h1>This is the reservation page</h1>
-            <Alert>
+        
+            {/* <Link to={`/${businessSlug}/reservations`}>Back</Link>
+            <h1>This is the reservation page</h1> */}
+            {/* <Alert>
                 <InfoIcon />
                 <AlertTitle>{statusTitle}</AlertTitle>
                 <AlertDescription>
                     {statusDescription}
                 </AlertDescription>
-            </Alert>
-            <div className="mt-6 mb-6">
+            </Alert> */}
+            {/* <div className="mt-6 mb-6">
                 <ReservationStatusStepper
                     reservationStatus={reservation.reservationStatus} />
-            </div>
+            </div> */}
+              {business && (
+          <BusinessHeader
+            logoUrl={business.logo_url ?? ""}
+            businessName={business.name}
+            description={business.description ?? ""}
+          />
+        )}
 
             <form>
                 {reservation.reservationStatus !== "pending_acceptance" &&

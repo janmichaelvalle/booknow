@@ -22,9 +22,10 @@ export async function getReservationsByBusinessSlug(businessId: string):
             id,
             guest_count,
             selected_package_id,
-            package_total,
-            addons_total,
-            grand_total,
+           package_total,
+           addons_total,
+           transportation_fee,
+           grand_total,
             event_date,
             start_time,
             end_time,
@@ -86,7 +87,8 @@ export async function getReservationsByBusinessSlug(businessId: string):
             rejectionReason: row.rejection_reason,
             customerName: row.customer_name,
             customerEmail: row.customer_email,
-            customerPhone: row.customer_phone
+            customerPhone: row.customer_phone,
+            transportationFee: row.transportation_fee
         }
     })
 
@@ -105,6 +107,7 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
             selected_package_id,
             package_total,
             addons_total,
+            transportation_fee,
             grand_total,
             event_date,
             start_time,
@@ -176,7 +179,8 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         rejectionReason: row.rejection_reason,
         customerName: row.customer_name,
         customerEmail: row.customer_email,
-        customerPhone: row.customer_phone
+        customerPhone: row.customer_phone,
+        transportationFee: row.transportation_fee,
     }
 
     return { data: reservation }
@@ -198,7 +202,8 @@ export async function createReservation(businessId: string, body: ReservationFor
         grand_total: body.grandTotal,
         customer_name: body.customerName,
         customer_email: body.customerEmail,
-        customer_phone: body.customerPhone
+        customer_phone: body.customerPhone,
+        transportation_fee: body.transportationFee,
     }
 
     const { data: reservationRows, error: reservationError } = await supabase
@@ -218,7 +223,8 @@ export async function createReservation(businessId: string, body: ReservationFor
             status,
             customer_name,
             customer_email,
-            customer_phone
+            customer_phone,
+            transportation_fee
             `)
 
     if (reservationError || !reservationRows?.length) {
@@ -298,7 +304,8 @@ export async function createReservation(businessId: string, body: ReservationFor
         reservationStatus: "pending_acceptance",
         customerName: inserted.customer_name,
         customerEmail: inserted.customer_email,
-        customerPhone: inserted.customer_phone
+        customerPhone: inserted.customer_phone,
+        transportationFee: inserted.transportation_fee
     }
     return { data: newReservation }
 
@@ -320,7 +327,8 @@ export async function updateReservation(businessId: string, body: ReservationFor
         grand_total: body.grandTotal,
         customer_name: body.customerName,
         customer_email: body.customerEmail,
-        customer_phone: body.customerPhone
+        customer_phone: body.customerPhone,
+        transportation_fee: body.transportationFee,
     }
 
 
@@ -337,6 +345,7 @@ export async function updateReservation(businessId: string, body: ReservationFor
             package_total,
             addons_total,
             grand_total,
+            transportation_fee,
             start_time,
             end_time,
             venue,
@@ -443,7 +452,8 @@ export async function updateReservation(businessId: string, body: ReservationFor
         grandTotal: updatedData.grand_total,
         customerName: updatedData.customer_name,
         customerEmail: updatedData.customer_email,
-        customerPhone: updatedData.customer_phone
+        customerPhone: updatedData.customer_phone,
+        transportationFee: updatedData.transportation_fee,
     }
 
     return { data: updatedReservation }
@@ -534,7 +544,7 @@ export async function submitReservationPayment(businessId: string, reservationId
     }
 
     const updatedReservationPayment = rows[0] as ReservationDbRow
-     
+
     return { data: updatedReservationPayment }
 
 }
