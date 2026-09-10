@@ -267,6 +267,7 @@ create table public.reservations (
   start_time text not null,
   end_time text not null,
   venue text not null,
+  occasion text not null,
   guest_count integer not null check (guest_count > 0),
   selected_package_id uuid not null references public.business_packages(id),
   package_total numeric(10,2) not null default 0 check (package_total >= 0),

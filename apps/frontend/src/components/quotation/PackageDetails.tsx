@@ -4,7 +4,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
-import { Martini, GlassWater, MailSearch } from "lucide-react"
 import { type BusinessPackage, type PackagePricing } from "../../lib/types"
 
 type PackageDetailsProps = {
@@ -17,8 +16,6 @@ type PackageDetailsProps = {
 
 
 export function PackageDetails({ packages, packagePricing, guestCount, form }: PackageDetailsProps) {
-
-
   return (
 
 

@@ -1,6 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-import { useState } from "react"
 
 import {
   Field,
@@ -9,6 +8,25 @@ import {
   FieldError,
 } from "../ui/field"
 
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+
+const items = [
+  { label: "Wedding", value: "wedding" },
+  { label: "Debut", value: "debut" },
+  { label: "Baptism", value: "baptism" },
+  { label: "Kiddie Party", value: "kiddie-party" },
+  { label: "Corporate Event", value: "corporate-event" },
+  { label: "Birthday", value: "birthday" },
+  { label: "Graduation", value: "graduation" },
+  { label: "Other", value: "other" },
+]
 
 import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
@@ -37,7 +55,7 @@ export function EventDetails({ form, venueCoverage,
 
   return (
     <>
-      {/* <CoverPhoto /> */}
+
 
       <Card>
 
@@ -102,7 +120,6 @@ export function EventDetails({ form, venueCoverage,
                 )
               }}
             </form.Field>
-
             <div className="border-t pt-4">
               <div className="grid grid-cols-2 gap-3">
                 <form.Field name="startTime">
@@ -222,7 +239,70 @@ export function EventDetails({ form, venueCoverage,
               </Field>
             )}
           />
+          <form.Field name="occasion">
+            {(field: any) => (
+              <Field
+                className="w-full"
+                data-invalid={
+                  !field.state.meta.isValid &&
+                  field.state.meta.isTouched
+                }
+              >
+                <FieldLabel htmlFor={field.name}>
+                  Occasion
+                </FieldLabel>
 
+                <Select
+                  value={field.state.value ?? ""}
+                  onValueChange={(value) => field.handleChange(value)}
+                >
+
+                  <SelectTrigger id={field.name} className="w-full">
+                    <SelectValue placeholder="Select an occasion" />
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectGroup>
+                      {items.map((item) => (
+                        <SelectItem
+                          key={item.value}
+                          value={item.value}
+                        >
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
+                {field.state.value === "other" && (
+                  <form.Field name="occasionOther">
+                    {(otherField: any) => (
+                      <Field>
+                        <FieldLabel htmlFor={otherField.name}>
+                          Please specify
+                        </FieldLabel>
+
+                        <Input
+                          id={otherField.name}
+                          placeholder="Enter the occasion"
+                          value={otherField.state.value ?? ""}
+                          onBlur={otherField.handleBlur}
+                          onChange={(event) =>
+                            otherField.handleChange(event.target.value)
+                          }
+                        />
+                      </Field>
+                    )}
+                  </form.Field>
+                )}
+                {field.state.meta.isTouched &&
+                  field.state.meta.errors.length > 0 && (
+                    <FieldError errors={field.state.meta.errors} />
+                  )}
+
+              </Field>
+            )}
+          </form.Field>
         </CardContent>
 
       </Card>

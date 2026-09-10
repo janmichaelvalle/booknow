@@ -61,6 +61,7 @@ export type ReservationDbRow = {
   start_time: string
   end_time: string
   venue: string
+  occasion: string
   guest_count: number
   selected_package_id: SelectedPackageId
   package_total: number
@@ -105,6 +106,7 @@ export type Reservation = {
   customerEmail: string
   customerPhone: string
   transportationFee: number
+  occasion: string
 }
 
 export type ReservationFormBody = {
@@ -122,6 +124,7 @@ export type ReservationFormBody = {
   customerName: string
   customerEmail: string
   customerPhone: string
+  occasion: string
 }
 
 

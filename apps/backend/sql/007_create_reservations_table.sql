@@ -17,6 +17,7 @@ create table if not exists public.reservations (
   start_time text not null,
   end_time text not null,
   venue text not null,
+  occasion text not null,
 
   guest_count integer not null
     check (guest_count > 0),

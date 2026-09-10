@@ -22,29 +22,40 @@ import { StickyOrderSummary } from "@/components/quotation/StickyOrderSummary"
 
 
 // The quotationSchema validates the user inputs 
-const quotationSchema = z.object({
-  eventDate: z.date({
-    error: (issue) =>
-      issue.input === undefined ? "Event date is required" : "Invalid date",
-  }),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
-  venue: z.string().min(1, "Venue is required"),
-  guestCount: z.number().int().min(1, "Guest count must be at least 1"),
-  selectedPackage: z.string().min(1, "Package is required"),
+const quotationDetailsSchema = z
+  .object({
+    eventDate: z.date({
+      error: (issue) =>
+        issue.input === undefined
+          ? "Event date is required"
+          : "Invalid date",
+    }),
+    startTime: z.string().min(1, "Start time is required"),
+    endTime: z.string().min(1, "End time is required"),
+    venue: z.string().min(1, "Venue is required"),
+    occasion: z.string().min(1, "Occasion is required"),
+    occasionOther: z.string(),
+    guestCount: z
+      .number()
+      .int()
+      .min(1, "Guest count must be at least 1"),
+    selectedPackage: z.string().min(1, "Package is required"),
+  })
+  .refine(
+    (values) =>
+      values.occasion !== "other" ||
+      values.occasionOther.trim().length > 0,
+    {
+      message: "Please specify the occasion",
+      path: ["occasionOther"],
+    }
+  )
+
+const quotationSchema = quotationDetailsSchema.safeExtend({
   selectedAddOns: z.record(z.string(), z.number()),
   customerName: z.string().min(1, "Name is required"),
   customerEmail: z.email("Valid email is required"),
   customerPhone: z.string().min(1, "Phone number is required"),
-})
-
-const quotationDetailsSchema = quotationSchema.pick({
-  eventDate: true,
-  startTime: true,
-  endTime: true,
-  venue: true,
-  guestCount: true,
-  selectedPackage: true,
 })
 
 
@@ -66,6 +77,8 @@ export function QuotationPage() {
     startTime: "",
     endTime: "",
     venue: "",
+    occasion: "",
+    occasionOther: "",
     guestCount: undefined,
     selectedPackage: "",
     selectedAddOns: {},
@@ -145,6 +158,10 @@ export function QuotationPage() {
         startTime: value.startTime,
         endTime: value.endTime,
         venue: value.venue,
+        occasion:
+          value.occasion === "other"
+            ? value.occasionOther.trim()
+            : value.occasion,
         guestCount: value.guestCount,
         selectedPackageId: value.selectedPackage,
         selectedAddOns: value.selectedAddOns,
@@ -183,7 +200,7 @@ export function QuotationPage() {
     },
   })
 
-  
+
 
   function handleGetMyQuotationClick() {
     const result = quotationDetailsSchema.safeParse(form.state.values)
@@ -227,34 +244,34 @@ export function QuotationPage() {
 
       return
     }
-    
+
     setIsCustomerDetailsOpen(true)
   }
 
 
   async function handleCreateMyQuotationClick() {
-  await form.validate("submit")
+    await form.validate("submit")
 
-  if (!form.state.isFormValid) {
-    toast.error("Please provide your complete customer details.", {
-      position: "top-center",
-    })
+    if (!form.state.isFormValid) {
+      toast.error("Please provide your complete customer details.", {
+        position: "top-center",
+      })
 
-    return
-  }
-
-  await toast.promise(
-    async () => {
-      await form.handleSubmit()
-    },
-    {
-      loading: "Creating your quotation...",
-      success: "Your quotation was created successfully.",
-      error: "Something went wrong. Please try again.",
-      position: "top-center",
+      return
     }
-  )
-}
+
+    await toast.promise(
+      async () => {
+        await form.handleSubmit()
+      },
+      {
+        loading: "Creating your quotation...",
+        success: "Your quotation was created successfully.",
+        error: "Something went wrong. Please try again.",
+        position: "top-center",
+      }
+    )
+  }
 
 
   return (

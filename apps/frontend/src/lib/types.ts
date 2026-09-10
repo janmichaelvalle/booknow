@@ -10,6 +10,8 @@ export type QuotationValues = {
   startTime: string
   endTime: string
   venue: string
+  occasion: string
+  occasionOther: string
   guestCount: number | undefined
   selectedPackage: string
   // Record stores the add-on ID as the object key and quantity as the object value
