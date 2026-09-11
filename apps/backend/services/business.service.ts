@@ -31,6 +31,7 @@ export async function getBusinessBySlugOrError(slug: string): Promise<BusinessRe
   }
 }
 
+// Gets all packages of the business
 export async function getAllOfferings(businessId: string) {
   const packagesResult = await supabase
     .from("business_packages")
@@ -59,27 +60,29 @@ export async function getAllOfferings(businessId: string) {
   }
   const packageIds = packagesResult.data.map((pkg) => pkg.id)
 
-  const packagePricingResult = await supabase
-    .from("business_package_pricing")
-    .select("id, package_id, min_guests, max_guests, price_per_guest")
+  const packageTiersResult = await supabase
+    .from("business_package_tiers")
+    .select("id, package_id, guest_capacity, fixed_price")
     .in("package_id", packageIds)
+    .eq("is_active", true)
+    .order("guest_capacity", { ascending: true })
 
-  if (packagePricingResult.error) {
+  if (packageTiersResult.error) {
     return {
       error: {
-        message: "Failed to fetch package prices",
-        details: packagePricingResult.error.message,
+        message: "Failed to fetch package tiers",
+        details: packageTiersResult.error.message,
         status: 500,
-      }
+      },
     }
   }
 
-  if (!packagePricingResult.data || packagePricingResult.data.length === 0) {
+  if (!packageTiersResult.data || packageTiersResult.data.length === 0) {
     return {
       error: {
-        message: "No package prices found",
+        message: "No active package tiers found",
         status: 404,
-      }
+      },
     }
   }
 
@@ -102,8 +105,8 @@ export async function getAllOfferings(businessId: string) {
   return {
     data: {
       packages: packagesResult.data,
-      packagePricing: packagePricingResult.data,
+      packageTiers: packageTiersResult.data,
       addons: addonsResult.data,
-    }
+    },
   }
 }
