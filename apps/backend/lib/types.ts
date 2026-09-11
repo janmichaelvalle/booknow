@@ -57,6 +57,7 @@ export type SelectedPackageId = string
 
 export type ReservationDbRow = {
   id: string
+  quotation_reference: string
   event_date: string
   start_time: string
   end_time: string
@@ -75,6 +76,7 @@ export type ReservationDbRow = {
   customer_name: string
   customer_email: string
   customer_phone: string
+  created_at: string
 }
 
 export type SelectedReservationAddOn = {
@@ -87,6 +89,7 @@ export type SelectedReservationAddOn = {
 
 export type Reservation = {
   id: string
+  quotationReference: string
   eventDate: string
   startTime: string
   endTime: string
@@ -107,6 +110,7 @@ export type Reservation = {
   customerPhone: string
   transportationFee: number
   occasion: string
+  createdAt: string
 }
 
 export type ReservationFormBody = {

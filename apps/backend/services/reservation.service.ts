@@ -10,6 +10,29 @@ type UpdateReservationStatusBody = Pick<
     "reservationStatus" | "rejectionReason"
 >
 
+type DatabaseError = {
+    code?: string
+    message?: string
+    details?: string | null
+}
+
+function isQuotationReferenceCollision(
+    error: DatabaseError | null
+) {
+    return (
+        error?.code === "23505" &&
+        (
+            error.message?.includes(
+                "reservations_quotation_reference_unique"
+            ) ||
+            error.details?.includes("quotation_reference")
+        )
+    )
+}
+
+
+
+
 
 export async function getReservationsByBusinessSlug(businessId: string):
     // this async function returns a Promise, and when that Promise finishes, the final value will match ServiceResult
@@ -20,6 +43,8 @@ export async function getReservationsByBusinessSlug(businessId: string):
         .from('reservations')
         .select(`
             id,
+            quotation_reference,
+            created_at,
             guest_count,
             selected_package_id,
            package_total,
@@ -71,6 +96,7 @@ export async function getReservationsByBusinessSlug(businessId: string):
         }))
         return {
             id: row.id,
+            quotationReference: row.quotation_reference,
             eventDate: row.event_date,
             startTime: row.start_time,
             endTime: row.end_time,
@@ -90,7 +116,8 @@ export async function getReservationsByBusinessSlug(businessId: string):
             customerName: row.customer_name,
             customerEmail: row.customer_email,
             customerPhone: row.customer_phone,
-            transportationFee: row.transportation_fee
+            transportationFee: row.transportation_fee,
+            createdAt: row.created_at
         }
     })
 
@@ -105,6 +132,8 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         .from('reservations')
         .select(`
             id,
+            quotation_reference,
+            created_at,
             guest_count,
             selected_package_id,
             package_total,
@@ -165,6 +194,7 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
 
     const reservation: Reservation = {
         id: row.id,
+        quotationReference: row.quotation_reference,
         eventDate: row.event_date,
         startTime: row.start_time,
         endTime: row.end_time,
@@ -185,6 +215,7 @@ export async function getSingleReservationByBusinessSlug(businessId: string, res
         customerEmail: row.customer_email,
         customerPhone: row.customer_phone,
         transportationFee: row.transportation_fee,
+        createdAt: row.created_at
     }
 
     return { data: reservation }
@@ -211,27 +242,51 @@ export async function createReservation(businessId: string, body: ReservationFor
         transportation_fee: body.transportationFee,
     }
 
-    const { data: reservationRows, error: reservationError } = await supabase
-        .from('reservations')
-        .insert(payload)
-        .select(`
-            id,
-            event_date,
-            guest_count,
-            selected_package_id,
-            package_total,
-            addons_total,
-            grand_total,
-            start_time,
-            end_time,
-            venue,
-            occasion,
-            status,
-            customer_name,
-            customer_email,
-            customer_phone,
-            transportation_fee
-            `)
+
+    const insertReservation = async () => {
+        return await supabase
+            .from("reservations")
+            .insert(payload)
+            .select(`
+      id,
+      quotation_reference,
+      created_at,
+      event_date,
+      guest_count,
+      selected_package_id,
+      package_total,
+      addons_total,
+      grand_total,
+      start_time,
+      end_time,
+      venue,
+      occasion,
+      status,
+      customer_name,
+      customer_email,
+      customer_phone,
+      transportation_fee
+    `)
+    }
+
+    const maximumAttempts = 3
+
+    let insertResult = await insertReservation()
+
+    for (let attempt = 2; attempt <= maximumAttempts; attempt += 1) {
+        if (!isQuotationReferenceCollision(insertResult.error)) {
+            break
+        }
+
+        insertResult = await insertReservation()
+    }
+
+    const {
+        data: reservationRows,
+        error: reservationError,
+    } = insertResult
+
+
 
     if (reservationError || !reservationRows?.length) {
         return {
@@ -298,6 +353,8 @@ export async function createReservation(businessId: string, body: ReservationFor
 
     const newReservation: Reservation = {
         id: inserted.id,
+        quotationReference: inserted.quotation_reference,
+        createdAt: inserted.created_at,
         eventDate: inserted.event_date,
         startTime: inserted.start_time,
         endTime: inserted.end_time,
@@ -312,7 +369,13 @@ export async function createReservation(businessId: string, body: ReservationFor
         customerName: inserted.customer_name,
         customerEmail: inserted.customer_email,
         customerPhone: inserted.customer_phone,
-        transportationFee: inserted.transportation_fee
+        transportationFee: inserted.transportation_fee,
+        selectedAddOns: selectedAddonsPayload.map((addon) => ({
+            addonId: addon.addon_id,
+            addonName: addon.addon_name,
+            addonPrice: addon.addon_price,
+            quantity: addon.quantity,
+        })),
     }
     return { data: newReservation }
 
@@ -347,7 +410,9 @@ export async function updateReservation(businessId: string, body: ReservationFor
         .eq('business_id', businessId)
         .select(`
             id,
+            created_at,
             event_date,
+            quotation_reference,
             guest_count,
             selected_package_id,
             package_total,
@@ -450,6 +515,8 @@ export async function updateReservation(businessId: string, body: ReservationFor
     // Creates a new object in a frontend friendly 
     const updatedReservation: Reservation = {
         id: updatedData.id,
+        quotationReference: updatedData.quotation_reference,
+        createdAt: updatedData.created_at,
         eventDate: updatedData.event_date,
         startTime: updatedData.start_time,
         endTime: updatedData.end_time,
@@ -464,6 +531,12 @@ export async function updateReservation(businessId: string, body: ReservationFor
         customerEmail: updatedData.customer_email,
         customerPhone: updatedData.customer_phone,
         transportationFee: updatedData.transportation_fee,
+        selectedAddOns: selectedAddonsPayload.map((addon) => ({
+            addonId: addon.addon_id,
+            addonName: addon.addon_name,
+            addonPrice: addon.addon_price,
+            quantity: addon.quantity,
+        })),
     }
 
     return { data: updatedReservation }

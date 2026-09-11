@@ -30,6 +30,8 @@ export type SelectedReservationAddOn = {
 
 export type Reservation = {
   id: string
+  quotationReference: string
+  createdAt: string
   eventDate: string
   startTime: string
   endTime: string
