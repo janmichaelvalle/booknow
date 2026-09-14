@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom"
 import { ConfirmDialog } from "@/components/ui/confirm-dialog"
 import { toast } from "sonner"
 import { useForm } from "@tanstack/react-form"
-import { calculateQuotationTotals } from "@/lib/quotation";
+import { calculateQuotationTotals } from "@/lib/quotation-calculation";
 import { AddOns } from "@/components/quotation/AddOns";
 import { SummaryDetails } from "@/components/quotation/SummaryDetails";
 import { CustomerDetails } from "@/components/quotation/CustomerDetails"

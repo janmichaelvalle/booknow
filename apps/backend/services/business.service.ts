@@ -1,6 +1,5 @@
-import { supabase } from "../lib/supabase.js";
-import { BusinessRow } from "../lib/types.js";
-import type { BusinessResult } from "../lib/types.js";
+import { supabase } from "../lib/supabase.js"
+import type { BusinessResult, BusinessRow } from "../lib/types.js"
 
 export async function getBusinessBySlugOrError(slug: string): Promise<BusinessResult> {
   const { data, error } = await supabase
@@ -31,11 +30,11 @@ export async function getBusinessBySlugOrError(slug: string): Promise<BusinessRe
   }
 }
 
-// Gets all packages of the business
+// Gets all packages
 export async function getAllOfferings(businessId: string) {
   const packagesResult = await supabase
     .from("business_packages")
-    .select("id, name, badge_text, description")
+    .select("id, name, badge_text, description, tier_type")
     .eq("business_id", businessId)
     .eq("is_active", true)
 
@@ -60,12 +59,31 @@ export async function getAllOfferings(businessId: string) {
   }
   const packageIds = packagesResult.data.map((pkg) => pkg.id)
 
-  const packageTiersResult = await supabase
-    .from("business_package_tiers")
-    .select("id, package_id, guest_capacity, fixed_price")
+  const packageInclusionsResult = await supabase
+    .from("business_package_inclusions")
+    .select("id, package_id, name, quantity, unit, description, sort_order")
     .in("package_id", packageIds)
     .eq("is_active", true)
-    .order("guest_capacity", { ascending: true })
+    .order("sort_order", { ascending: true })
+
+  if (packageInclusionsResult.error) {
+    return {
+      error: {
+        message: "Failed to fetch package inclusions",
+        details: packageInclusionsResult.error.message,
+        status: 500,
+      },
+    }
+  }
+
+
+  // Gets all tiers of packages
+  const packageTiersResult = await supabase
+    .from("business_package_tiers")
+    .select("id, package_id, tier_value, pricing_type, price")
+    .in("package_id", packageIds)
+    .eq("is_active", true)
+    .order("tier_value", { ascending: true })
 
   if (packageTiersResult.error) {
     return {
@@ -86,27 +104,41 @@ export async function getAllOfferings(businessId: string) {
     }
   }
 
-  const addonsResult = await supabase
-    .from("business_addons")
-    .select("id, name, description, price")
-    .eq("business_id", businessId)
+  // Gets all items of those tiers
+  const packageTierIds = packageTiersResult.data.map((tier) => tier.id)
+  const packageTierItemsResult = await supabase
+    .from("business_package_tier_items")
+    .select(`
+    id,
+    package_tier_id,
+    item_type,
+    name,
+    quantity,
+    unit,
+    description,
+    price,
+    sort_order
+  `)
+    .in("package_tier_id", packageTierIds)
     .eq("is_active", true)
+    .order("sort_order", { ascending: true })
 
-  if (addonsResult.error) {
+  if (packageTierItemsResult.error) {
     return {
       error: {
-        message: "Failed to fetch add-ons",
-        details: addonsResult.error.message,
+        message: "Failed to fetch package tier items",
+        details: packageTierItemsResult.error.message,
         status: 500,
-      }
+      },
     }
   }
 
   return {
     data: {
       packages: packagesResult.data,
+      packageInclusions: packageInclusionsResult.data,
       packageTiers: packageTiersResult.data,
-      addons: addonsResult.data,
+      packageTierItems: packageTierItemsResult.data,
     },
   }
 }

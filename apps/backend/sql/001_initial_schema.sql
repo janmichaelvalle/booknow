@@ -11,11 +11,13 @@ drop policy if exists "Anyone can upload payment proofs"
   on storage.objects;
 
 -- Drop application tables in reverse dependency order.
+drop table if exists public.quotation_items;
 drop table if exists public.quotation_inclusions;
 drop table if exists public.quotation_addons;
 drop table if exists public.reservation_addons;
 drop table if exists public.quotations;
 drop table if exists public.reservations;
+drop table if exists public.business_package_tier_items;
 drop table if exists public.business_package_tier_inclusions;
 drop table if exists public.business_package_inclusions;
 drop table if exists public.business_package_tiers;
@@ -130,11 +132,16 @@ create table public.business_packages (
   name text not null,
   badge_text text,
   description text,
+  tier_type text not null check (
+    tier_type in ('guests', 'hours', 'units')
+  ),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint business_packages_business_id_name_unique
-    unique (business_id, name)
+    unique (business_id, name),
+  constraint business_packages_id_business_unique
+    unique (id, business_id)
 );
 
 create trigger business_packages_set_updated_at
@@ -145,17 +152,22 @@ create index business_packages_business_id_idx
   on public.business_packages (business_id);
 
 insert into public.business_packages (
-  business_id, name, badge_text, description
+  business_id, name, badge_text, description, tier_type
 )
-select business.id, seed.name, seed.badge_text, seed.description
+select
+  business.id,
+  seed.name,
+  seed.badge_text,
+  seed.description,
+  seed.tier_type
 from public.businesses business
 cross join (
   values
     ('Cocktail Package', '2 cocktails per guest',
-      'Perfect for wedding and corporate events.'),
+      'Perfect for wedding and corporate events.', 'guests'),
     ('Shooter Package', '5 shooters per guest',
-      'Best for debuts, birthdays, and college parties.')
-) as seed(name, badge_text, description)
+      'Best for debuts, birthdays, and college parties.', 'guests')
+) as seed(name, badge_text, description, tier_type)
 where business.slug = 'tipsy-tap';
 
 -- Inclusions shared by every tier of a package.
@@ -212,18 +224,22 @@ join (
   on seed.package_name = package.name
 where business.slug = 'tipsy-tap';
 
--- Fixed-price guest-capacity variations belonging to a package.
+-- Fixed-price and per-unit variations belonging to a package.
+-- The package's tier_type defines what tier_value measures.
 create table public.business_package_tiers (
   id uuid primary key default gen_random_uuid(),
   package_id uuid not null
     references public.business_packages(id) on delete cascade,
-  guest_capacity integer not null check (guest_capacity > 0),
-  fixed_price numeric(10,2) not null check (fixed_price >= 0),
+  tier_value numeric(10,2) not null check (tier_value > 0),
+  pricing_type text not null check (
+    pricing_type in ('fixed', 'per_unit')
+  ),
+  price numeric(10,2) not null check (price >= 0),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint business_package_tiers_package_capacity_unique
-    unique (package_id, guest_capacity),
+  constraint business_package_tiers_package_value_unique
+    unique (package_id, tier_value),
   constraint business_package_tiers_id_package_unique
     unique (id, package_id)
 );
@@ -232,129 +248,151 @@ create trigger business_package_tiers_set_updated_at
 before update on public.business_package_tiers
 for each row execute function public.set_updated_at();
 
-create index business_package_tiers_package_capacity_idx
-  on public.business_package_tiers (package_id, guest_capacity);
+create index business_package_tiers_package_value_idx
+  on public.business_package_tiers (package_id, tier_value);
 
 insert into public.business_package_tiers (
-  package_id, guest_capacity, fixed_price
+  package_id, tier_value, pricing_type, price
 )
-select package.id, seed.guest_capacity, seed.fixed_price
+select
+  package.id,
+  seed.tier_value,
+  seed.pricing_type,
+  seed.price
 from public.business_packages package
 join public.businesses business on business.id = package.business_id
 join (
   values
-    ('Cocktail Package', 30, 3500.00),
-    ('Cocktail Package', 50, 4500.00),
-    ('Cocktail Package', 75, 6000.00),
-    ('Cocktail Package', 100, 7500.00),
-    ('Shooter Package', 30, 3500.00),
-    ('Shooter Package', 50, 4500.00),
-    ('Shooter Package', 75, 6000.00),
-    ('Shooter Package', 100, 7500.00)
-) as seed(package_name, guest_capacity, fixed_price)
+    ('Cocktail Package', 30, 'fixed', 3500.00),
+    ('Cocktail Package', 50, 'fixed', 4500.00),
+    ('Cocktail Package', 75, 'fixed', 6000.00),
+    ('Cocktail Package', 100, 'fixed', 7500.00),
+    ('Shooter Package', 30, 'fixed', 3500.00),
+    ('Shooter Package', 50, 'fixed', 4500.00),
+    ('Shooter Package', 75, 'fixed', 6000.00),
+    ('Shooter Package', 100, 'fixed', 7500.00)
+) as seed(package_name, tier_value, pricing_type, price)
   on seed.package_name = package.name
 where business.slug = 'tipsy-tap';
 
--- Items and benefits that vary by package tier.
-create table public.business_package_tier_inclusions (
+-- Included benefits and optional paid choices that vary by package tier.
+create table public.business_package_tier_items (
   id uuid primary key default gen_random_uuid(),
   package_tier_id uuid not null
     references public.business_package_tiers(id) on delete cascade,
+  item_type text not null check (
+    item_type in ('inclusion', 'extra', 'upgrade', 'freebie')
+  ),
   name text not null,
   quantity integer not null check (quantity > 0),
   unit text not null,
   description text,
+  price numeric(10,2) not null default 0 check (price >= 0),
   sort_order integer not null default 0 check (sort_order >= 0),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint business_package_tier_inclusions_tier_name_unique
-    unique (package_tier_id, name)
+  constraint business_package_tier_items_tier_type_name_unique
+    unique (package_tier_id, item_type, name),
+  constraint business_package_tier_items_price_matches_type_check
+    check (
+      (item_type in ('inclusion', 'freebie') and price = 0)
+      or item_type in ('extra', 'upgrade')
+    )
 );
 
-create trigger business_package_tier_inclusions_set_updated_at
-before update on public.business_package_tier_inclusions
+create trigger business_package_tier_items_set_updated_at
+before update on public.business_package_tier_items
 for each row execute function public.set_updated_at();
 
-create index business_package_tier_inclusions_tier_id_idx
-  on public.business_package_tier_inclusions (package_tier_id);
+create index business_package_tier_items_tier_id_idx
+  on public.business_package_tier_items (package_tier_id);
 
-insert into public.business_package_tier_inclusions (
-  package_tier_id, name, quantity, unit, description, sort_order
+insert into public.business_package_tier_items (
+  package_tier_id,
+  item_type,
+  name,
+  quantity,
+  unit,
+  description,
+  price,
+  sort_order
 )
 select
   tier.id,
+  seed.item_type,
   seed.name,
   seed.quantity,
   seed.unit,
   seed.description,
+  seed.price,
   seed.sort_order
 from public.business_package_tiers tier
 join public.business_packages package on package.id = tier.package_id
 join public.businesses business on business.id = package.business_id
 join (
   values
-    ('Cocktail Package', 30, 'Cocktails', 60, 'servings',
-      'Two cocktails per guest.', 1),
-    ('Cocktail Package', 50, 'Cocktails', 100, 'servings',
-      'Two cocktails per guest.', 1),
-    ('Cocktail Package', 75, 'Cocktails', 150, 'servings',
-      'Two cocktails per guest.', 1),
-    ('Cocktail Package', 100, 'Cocktails', 200, 'servings',
-      'Two cocktails per guest.', 1),
-    ('Shooter Package', 30, 'Shooters', 150, 'servings',
-      'Five shooters per guest.', 1),
-    ('Shooter Package', 50, 'Shooters', 250, 'servings',
-      'Five shooters per guest.', 1),
-    ('Shooter Package', 75, 'Shooters', 375, 'servings',
-      'Five shooters per guest.', 1),
-    ('Shooter Package', 100, 'Shooters', 500, 'servings',
-      'Five shooters per guest.', 1)
+    ('Cocktail Package', 30, 'inclusion', 'Cocktails', 60, 'servings',
+      'Two cocktails per guest.', 0.00, 1),
+    ('Cocktail Package', 50, 'inclusion', 'Cocktails', 100, 'servings',
+      'Two cocktails per guest.', 0.00, 1),
+    ('Cocktail Package', 75, 'inclusion', 'Cocktails', 150, 'servings',
+      'Two cocktails per guest.', 0.00, 1),
+    ('Cocktail Package', 100, 'inclusion', 'Cocktails', 200, 'servings',
+      'Two cocktails per guest.', 0.00, 1),
+    ('Shooter Package', 30, 'inclusion', 'Shooters', 150, 'servings',
+      'Five shooters per guest.', 0.00, 1),
+    ('Shooter Package', 50, 'inclusion', 'Shooters', 250, 'servings',
+      'Five shooters per guest.', 0.00, 1),
+    ('Shooter Package', 75, 'inclusion', 'Shooters', 375, 'servings',
+      'Five shooters per guest.', 0.00, 1),
+    ('Shooter Package', 100, 'inclusion', 'Shooters', 500, 'servings',
+      'Five shooters per guest.', 0.00, 1),
+    ('Cocktail Package', 30, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+      'Lychee 330 mL Can, case of 24.', 1629.00, 10),
+    ('Cocktail Package', 50, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+      'Lychee 330 mL Can, case of 24.', 1629.00, 10),
+    ('Cocktail Package', 75, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+      'Lychee 330 mL Can, case of 24.', 1629.00, 10),
+    ('Cocktail Package', 100, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+      'Lychee 330 mL Can, case of 24.', 1629.00, 10),
+    ('Cocktail Package', 30, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+      'Tennessee Whiskey 1L.', 1680.00, 11),
+    ('Cocktail Package', 50, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+      'Tennessee Whiskey 1L.', 1680.00, 11),
+    ('Cocktail Package', 75, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+      'Tennessee Whiskey 1L.', 1680.00, 11),
+    ('Cocktail Package', 100, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+      'Tennessee Whiskey 1L.', 1680.00, 11),
+    ('Shooter Package', 30, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+      'Lychee 330 mL Can, case of 24.', 1629.00, 10),
+    ('Shooter Package', 50, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+      'Lychee 330 mL Can, case of 24.', 1629.00, 10),
+    ('Shooter Package', 75, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+      'Lychee 330 mL Can, case of 24.', 1629.00, 10),
+    ('Shooter Package', 100, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+      'Lychee 330 mL Can, case of 24.', 1629.00, 10),
+    ('Shooter Package', 30, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+      'Tennessee Whiskey 1L.', 1680.00, 11),
+    ('Shooter Package', 50, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+      'Tennessee Whiskey 1L.', 1680.00, 11),
+    ('Shooter Package', 75, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+      'Tennessee Whiskey 1L.', 1680.00, 11),
+    ('Shooter Package', 100, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+      'Tennessee Whiskey 1L.', 1680.00, 11)
 ) as seed(
   package_name,
-  guest_capacity,
+  tier_value,
+  item_type,
   name,
   quantity,
   unit,
   description,
+  price,
   sort_order
 )
   on seed.package_name = package.name
-  and seed.guest_capacity = tier.guest_capacity
-where business.slug = 'tipsy-tap';
-
--- Add-ons.
-create table public.business_addons (
-  id uuid primary key default gen_random_uuid(),
-  business_id uuid not null
-    references public.businesses(id) on delete cascade,
-  name text not null,
-  description text,
-  price numeric(10,2) not null check (price >= 0),
-  is_active boolean not null default true,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint business_addons_business_id_name_unique
-    unique (business_id, name)
-);
-
-create trigger business_addons_set_updated_at
-before update on public.business_addons
-for each row execute function public.set_updated_at();
-
-create index business_addons_business_id_idx
-  on public.business_addons (business_id);
-
-insert into public.business_addons (
-  business_id, name, description, price
-)
-select business.id, seed.name, seed.description, seed.price
-from public.businesses business
-cross join (
-  values
-    ('San Miguel Flavored Beer', 'Lychee 330 mL Can, Case of 24', 1629.00),
-    ('Jack Daniel''s Old No. 7', 'Tennessee Whiskey 1L', 1680.00)
-) as seed(name, description, price)
+  and seed.tier_value = tier.tier_value
 where business.slug = 'tipsy-tap';
 
 -- Quotations.
@@ -362,8 +400,7 @@ create table public.quotations (
   id uuid primary key default gen_random_uuid(),
   quotation_reference text not null
     default public.generate_quotation_reference(),
-  business_id uuid not null
-    references public.businesses(id) on delete cascade,
+  business_id uuid not null,
   customer_name text not null,
   customer_email text not null,
   customer_phone text not null,
@@ -373,12 +410,20 @@ create table public.quotations (
   venue text not null,
   occasion text not null,
   guest_count integer not null check (guest_count > 0),
-  selected_package_id uuid not null references public.business_packages(id),
+  selected_package_id uuid not null,
   selected_package_tier_id uuid not null,
   package_name text not null,
-  package_guest_capacity integer not null check (package_guest_capacity > 0),
+  package_tier_type text not null check (
+    package_tier_type in ('guests', 'hours', 'units')
+  ),
+  package_tier_value numeric(10,2) not null check (package_tier_value > 0),
+  package_pricing_type text not null check (
+    package_pricing_type in ('fixed', 'per_unit')
+  ),
+  package_price numeric(10,2) not null check (package_price >= 0),
   package_total numeric(10,2) not null default 0 check (package_total >= 0),
-  addons_total numeric(10,2) not null default 0 check (addons_total >= 0),
+  selected_items_total numeric(10,2) not null default 0
+    check (selected_items_total >= 0),
   transportation_fee numeric(10,2) not null default 0
     check (transportation_fee >= 0),
   grand_total numeric(10,2) not null default 0 check (grand_total >= 0),
@@ -408,7 +453,14 @@ create table public.quotations (
     check (quotation_reference ~ '^[A-HJ-NP-Z2-9]{6}$'),
   constraint quotations_quotation_reference_unique
     unique (quotation_reference),
-  constraint quotations_selected_tier_matches_package_fk
+  constraint quotations_business_fk
+    foreign key (business_id)
+    references public.businesses(id)
+    on delete cascade,
+  constraint quotations_selected_package_business_fk
+    foreign key (selected_package_id, business_id)
+    references public.business_packages(id, business_id),
+  constraint quotations_selected_tier_package_fk
     foreign key (selected_package_tier_id, selected_package_id)
     references public.business_package_tiers(id, package_id),
   constraint quotations_close_reason_matches_status_check
@@ -448,6 +500,9 @@ create table public.quotation_inclusions (
   id uuid primary key default gen_random_uuid(),
   quotation_id uuid not null
     references public.quotations(id) on delete cascade,
+  item_type text not null check (
+    item_type in ('inclusion', 'freebie')
+  ),
   name text not null,
   quantity integer not null check (quantity > 0),
   unit text not null,
@@ -459,25 +514,33 @@ create table public.quotation_inclusions (
 create index quotation_inclusions_quotation_id_idx
   on public.quotation_inclusions (quotation_id);
 
--- Quotation add-on snapshots.
-create table public.quotation_addons (
+-- Selected extra and upgrade snapshots captured with their quoted prices.
+create table public.quotation_items (
   id uuid primary key default gen_random_uuid(),
   quotation_id uuid not null
     references public.quotations(id) on delete cascade,
-  addon_id uuid
-    references public.business_addons(id) on delete set null,
-  addon_name text not null,
-  addon_price numeric(10,2) not null check (addon_price >= 0),
+  tier_item_id uuid
+    references public.business_package_tier_items(id) on delete set null,
+  item_type text not null check (
+    item_type in ('extra', 'upgrade')
+  ),
+  item_name text not null,
+  item_description text,
+  unit text not null,
+  unit_price numeric(10,2) not null check (unit_price >= 0),
   quantity integer not null check (quantity > 0),
+  line_total numeric(10,2) not null check (line_total >= 0),
   created_at timestamptz not null default now(),
-  constraint quotation_addons_quotation_id_addon_id_unique
-    unique (quotation_id, addon_id)
+  constraint quotation_items_quotation_id_tier_item_id_unique
+    unique (quotation_id, tier_item_id),
+  constraint quotation_items_line_total_matches_quantity_check
+    check (line_total = unit_price * quantity)
 );
 
-create index quotation_addons_quotation_id_idx
-  on public.quotation_addons (quotation_id);
-create index quotation_addons_addon_id_idx
-  on public.quotation_addons (addon_id);
+create index quotation_items_quotation_id_idx
+  on public.quotation_items (quotation_id);
+create index quotation_items_tier_item_id_idx
+  on public.quotation_items (tier_item_id);
 
 -- Shared service-area hierarchy.
 create table public.service_areas (

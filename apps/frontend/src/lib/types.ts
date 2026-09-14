@@ -1,3 +1,15 @@
+export type TierType = "guests" | "hours" | "units"
+
+export type PricingType = "fixed" | "per_unit"
+
+export type TierItemType =
+  | "inclusion"
+  | "extra"
+  | "upgrade"
+  | "freebie"
+
+
+
 export type CoverageResult = {
   isCovered: boolean
   transportationFee: number | null
@@ -14,8 +26,9 @@ export type QuotationValues = {
   occasionOther: string
   guestCount: number | undefined
   selectedPackage: string
-  // Record stores the add-on ID as the object key and quantity as the object value
-  selectedAddOns: Record<string, number>,
+  selectedPackageTier: string
+  // The key is the tier-item ID and the value is the selected quantity.
+  selectedTierItems: Record<string, number>
   customerName: string
   customerEmail: string
   customerPhone: string
@@ -73,27 +86,45 @@ export type BusinessPackage = {
   name: string
   badge_text: string | null
   description: string | null
+  tier_type: TierType
 }
 
-export type PackagePricing = {
+
+export type PackageInclusion = {
   id: string
   package_id: string
-  min_guests: number
-  max_guests: number | null
-  price_per_guest: number
+  name: string
+  quantity: number
+  unit: string
+  description: string | null
+  sort_order: number
 }
 
-export type AddOn = {
+export type PackageTier = {
   id: string
+  package_id: string
+  tier_value: number
+  pricing_type: PricingType
+  price: number
+}
+
+export type PackageTierItem = {
+  id: string
+  package_tier_id: string
+  item_type: TierItemType
   name: string
+  quantity: number
+  unit: string
   description: string | null
   price: number
+  sort_order: number
 }
 
 export type Offerings = {
   packages: BusinessPackage[]
-  packagePricing: PackagePricing[]
-  addons: AddOn[]
+  packageInclusions: PackageInclusion[]
+  packageTiers: PackageTier[]
+  packageTierItems: PackageTierItem[]
 }
 
 export type SelectedAddOnItem = {

@@ -10,7 +10,7 @@ import { type Offerings, type QuotationValues, type CoverageResult } from "@/lib
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
 
-import { calculateQuotationTotals } from "@/lib/quotation";
+import { calculateQuotationTotals } from "@/lib/quotation-calculation";
 
 import { useState } from "react";
 
@@ -40,6 +40,7 @@ const quotationDetailsSchema = z
       .int()
       .min(1, "Guest count must be at least 1"),
     selectedPackage: z.string().min(1, "Package is required"),
+    selectedPackageTier: z.string().min(1, "Package tier is required"),
   })
   .refine(
     (values) =>
@@ -52,7 +53,7 @@ const quotationDetailsSchema = z
   )
 
 const quotationSchema = quotationDetailsSchema.safeExtend({
-  selectedAddOns: z.record(z.string(), z.number()),
+  selectedTierItems: z.record(z.string(), z.number()),
   customerName: z.string().min(1, "Name is required"),
   customerEmail: z.email("Valid email is required"),
   customerPhone: z.string().min(1, "Phone number is required"),
@@ -81,7 +82,8 @@ export function QuotationPage() {
     occasionOther: "",
     guestCount: undefined,
     selectedPackage: "",
-    selectedAddOns: {},
+    selectedPackageTier: "",
+    selectedTierItems: {},
     customerName: "",
     customerEmail: "",
     customerPhone: ""
@@ -113,17 +115,18 @@ export function QuotationPage() {
       const data = await res.json()
       return data.data ?? {
         packages: [],
-        packagePricing: [],
-        addons: [],
+        packageInclusions: [],
+        packageTiers: [],
+        packageTierItems: [],
       }
     },
     enabled: !!businessSlug,
     initialData: {
       packages: [],
-      packagePricing: [],
-      addons: [],
+      packageInclusions: [],
+      packageTiers: [],
+      packageTierItems: [],
     }
-
   })
 
 
@@ -214,6 +217,7 @@ export function QuotationPage() {
         venue: "venue",
         guestCount: "number of guests",
         selectedPackage: "package",
+        selectedPackageTier: "package tier",
       }
 
       const missingFields = [
@@ -311,7 +315,7 @@ export function QuotationPage() {
                 <PackageDetails
                   form={form}
                   packages={offerings.packages}
-                  packagePricing={offerings.packagePricing}
+                  packageTiers={offerings.packageTiers}
                   guestCount={totals.guestCount}
                 />
 

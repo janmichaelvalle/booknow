@@ -4,26 +4,114 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Badge } from "@/components/ui/badge"
-import { type BusinessPackage, type PackagePricing } from "../../lib/types"
+import type { BusinessPackage, PackageTier } from "../../lib/types"
+import { useEffect } from "react"
 
 type PackageDetailsProps = {
   packages: BusinessPackage[]
-  packagePricing: PackagePricing[]
+  packageTiers: PackageTier[]
   guestCount: number
   form: any
 }
 
 
+export function PackageDetails({
+  packages,
+  packageTiers,
+  guestCount,
+  form,
+}: PackageDetailsProps) {
 
-export function PackageDetails({ packages, packagePricing, guestCount, form }: PackageDetailsProps) {
+  const selectedPackageId = form.state.values.selectedPackage
+  const selectedPackageTierId = form.state.values.selectedPackageTier
+  const selectedPackage = packages.find(
+    (pkg) => pkg.id === selectedPackageId
+  )
+
+  const selectedPackageTiers = packageTiers
+    .filter((tier) => tier.package_id === selectedPackageId)
+    .sort((a, b) => a.tier_value - b.tier_value)
+
+  const requiresManualTierSelection =
+    selectedPackage !== undefined &&
+    selectedPackage.tier_type !== "guests"
+
+
+  useEffect(() => {
+    const selectedPackage = packages.find(
+      (pkg) => pkg.id === selectedPackageId
+    )
+
+    if (selectedPackage?.tier_type !== "guests") {
+      return
+    }
+
+    const tiersForPackage = packageTiers
+      .filter((tier) => tier.package_id === selectedPackageId)
+      .sort((a, b) => a.tier_value - b.tier_value)
+
+    const currentTier = tiersForPackage.find(
+      (tier) => tier.id === selectedPackageTierId
+    )
+
+    const currentTierIsValid =
+      currentTier !== undefined &&
+      currentTier.tier_value >= guestCount
+
+    if (currentTierIsValid) {
+      return
+    }
+
+    const recommendedTier = tiersForPackage.find(
+      (tier) => tier.tier_value >= guestCount
+    )
+
+    const nextTierId = recommendedTier?.id ?? ""
+
+    if (nextTierId === selectedPackageTierId) {
+      return
+    }
+
+    form.setFieldValue("selectedPackageTier", nextTierId)
+    form.setFieldValue("selectedTierItems", {})
+  }, [
+    form,
+    guestCount,
+    packageTiers,
+    packages,
+    selectedPackageId,
+    selectedPackageTierId,
+  ])
+
+  function handlePackageChange(
+    packageId: string,
+    handleChange: (value: string) => void
+  ) {
+    handleChange(packageId)
+
+    const selectedPackage = packages.find((pkg) => pkg.id === packageId)
+
+    const tiersForPackage = packageTiers
+      .filter((tier) => tier.package_id === packageId)
+      .sort((a, b) => a.tier_value - b.tier_value)
+
+    const recommendedTier =
+      selectedPackage?.tier_type === "guests"
+        ? tiersForPackage.find((tier) => tier.tier_value >= guestCount)
+        : undefined
+
+    form.setFieldValue("selectedPackageTier", recommendedTier?.id ?? "")
+    form.setFieldValue("selectedTierItems", {})
+  }
+
+
+
   return (
-
-
     <>
       <Card>
         <CardHeader>
           <CardTitle>Select Package</CardTitle>
-          <CardDescription>Every package includes 4 hours open bar, bartenders, and LED bar counter.</CardDescription>
+          <CardDescription>Choose the package that best fits your event.</CardDescription>
         </CardHeader>
         <CardContent>
 
@@ -33,18 +121,32 @@ export function PackageDetails({ packages, packagePricing, guestCount, form }: P
                 <FieldSet>
                   <RadioGroup
                     value={field.state.value}
-                    onValueChange={field.handleChange}
+                    onValueChange={(packageId) =>
+                      handlePackageChange(packageId, field.handleChange)
+                    }
                   >
                     {packages.map((pkg) => {
-                      const matchedPrice = packagePricing.find((price) => {
-                        const matchesPackage = price.package_id === pkg.id
-                        const matchesMinGuests = guestCount >= price.min_guests
-                        const matchesMaxGuests =
-                          price.max_guests === null || guestCount <= price.max_guests
+                      const tiersForPackage = packageTiers
+                        .filter((tier) => tier.package_id === pkg.id)
+                        .sort((a, b) => a.tier_value - b.tier_value)
 
-                        return matchesPackage && matchesMinGuests && matchesMaxGuests
-                      })
-                      
+                      const previewTier =
+                        pkg.tier_type === "guests"
+                          ? tiersForPackage.find((tier) => tier.tier_value >= guestCount)
+                          : tiersForPackage[0]
+
+                      const pricingQuantity =
+                        pkg.tier_type === "guests"
+                          ? guestCount
+                          : previewTier?.tier_value ?? 0
+
+                      const previewPrice = previewTier
+                        ? previewTier.pricing_type === "fixed"
+                          ? previewTier.price
+                          : previewTier.price * pricingQuantity
+                        : null
+
+
 
                       return (
                         <FieldLabel key={pkg.id} htmlFor={pkg.id}>
@@ -55,7 +157,9 @@ export function PackageDetails({ packages, packagePricing, guestCount, form }: P
                                 <FieldTitle>{pkg.name}</FieldTitle>
 
                                 <FieldTitle>
-                                  ₱ {matchedPrice ? guestCount * matchedPrice.price_per_guest : 0}
+                                  {previewPrice === null
+                                    ? "Unavailable"
+                                    : `${pkg.tier_type === "guests" ? "" : "From "}₱${previewPrice.toLocaleString()}`}
                                 </FieldTitle>
                               </div>
 
@@ -75,6 +179,69 @@ export function PackageDetails({ packages, packagePricing, guestCount, form }: P
               </FieldGroup>
             )}
           </form.Field>
+          {
+            requiresManualTierSelection && (
+              <form.Field name="selectedPackageTier">
+                {(field: any) => (
+                  <FieldGroup className="mt-4">
+                    <FieldSet>
+                      <FieldLabel>
+                        Choose {selectedPackage.tier_type}
+                      </FieldLabel>
+
+                      <RadioGroup
+                        value={field.state.value}
+                        onValueChange={(tierId) => {
+                          field.handleChange(tierId)
+                          form.setFieldValue("selectedTierItems", {})
+                        }}
+                      >
+                        {selectedPackageTiers.map((tier) => {
+                          const tierTotal =
+                            tier.pricing_type === "fixed"
+                              ? tier.price
+                              : tier.price * tier.tier_value
+
+                          return (
+                            <FieldLabel
+                              key={tier.id}
+                              htmlFor={`tier-${tier.id}`}
+                            >
+                              <Field orientation="horizontal">
+                                <RadioGroupItem
+                                  id={`tier-${tier.id}`}
+                                  value={tier.id}
+                                />
+
+                                <FieldContent>
+                                  <div className="flex items-center justify-between gap-4">
+                                    <FieldTitle>
+                                      {tier.tier_value} {selectedPackage.tier_type}
+                                    </FieldTitle>
+
+                                    <FieldTitle>
+                                      ₱{tierTotal.toLocaleString()}
+                                    </FieldTitle>
+                                  </div>
+
+                                  {tier.pricing_type === "per_unit" && (
+                                    <FieldDescription>
+                                      ₱{tier.price.toLocaleString()} per unit
+                                    </FieldDescription>
+                                  )}
+                                </FieldContent>
+                              </Field>
+                            </FieldLabel>
+                          )
+                        })}
+                      </RadioGroup>
+                    </FieldSet>
+                  </FieldGroup>
+                )}
+              </form.Field>
+            )
+          }
+
 
         </CardContent>
       </Card>
