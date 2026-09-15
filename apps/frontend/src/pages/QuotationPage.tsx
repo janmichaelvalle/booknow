@@ -1,6 +1,6 @@
 import { EventDetails } from "@/components/quotation/EventDetails";
 import { PackageDetails } from "@/components/quotation/PackageDetails"
-import { AddOns } from "@/components/quotation/AddOns";
+import { TierItems } from "@/components/quotation/TierItems"
 
 import { CustomerDetailsDialog } from "@/components/quotation/CustomerDetailsDialog";
 
@@ -315,19 +315,22 @@ export function QuotationPage() {
                 <PackageDetails
                   form={form}
                   packages={offerings.packages}
+                  packageInclusions={offerings.packageInclusions}
                   packageTiers={offerings.packageTiers}
+                  packageTierItems={offerings.packageTierItems}
                   guestCount={totals.guestCount}
                 />
 
-                <AddOns
-                  addons={offerings.addons}
+                <TierItems
+                  packageTierItems={offerings.packageTierItems}
+                  selectedPackageTierId={totals.selectedTier?.id ?? ""}
                   form={form}
                 />
 
 
                 <StickyOrderSummary
                   basePrice={totals.packageTotal}
-                  addOnsPrice={totals.addOnsTotal}
+                  addOnsPrice={totals.selectedItemsTotal}
                   transportationFee={venueCoverage?.transportationFee ?? 0}
                   onGetMyQuotationButtonClick={handleGetMyQuotationClick}
                 />
