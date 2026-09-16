@@ -318,7 +318,6 @@ export function QuotationPage() {
                   packageInclusions={offerings.packageInclusions}
                   packageTiers={offerings.packageTiers}
                   packageTierItems={offerings.packageTierItems}
-                  guestCount={totals.guestCount}
                 />
 
                 <TierItems

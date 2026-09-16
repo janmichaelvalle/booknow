@@ -86,7 +86,7 @@ export type BusinessPackage = {
   name: string
   badge_text: string | null
   description: string | null
-  tier_type: TierType
+  tier_unit: string
 }
 
 

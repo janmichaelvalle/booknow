@@ -34,7 +34,7 @@ export async function getBusinessBySlugOrError(slug: string): Promise<BusinessRe
 export async function getAllOfferings(businessId: string) {
   const packagesResult = await supabase
     .from("business_packages")
-    .select("id, name, badge_text, description, tier_type")
+    .select("id, name, badge_text, description, tier_unit")
     .eq("business_id", businessId)
     .eq("is_active", true)
 

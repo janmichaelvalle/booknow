@@ -132,8 +132,8 @@ create table public.business_packages (
   name text not null,
   badge_text text,
   description text,
-  tier_type text not null check (
-    tier_type in ('guests', 'hours', 'units')
+  tier_unit text not null check (
+    nullif(btrim(tier_unit), '') is not null
   ),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
@@ -152,14 +152,14 @@ create index business_packages_business_id_idx
   on public.business_packages (business_id);
 
 insert into public.business_packages (
-  business_id, name, badge_text, description, tier_type
+  business_id, name, badge_text, description, tier_unit
 )
 select
   business.id,
   seed.name,
   seed.badge_text,
   seed.description,
-  seed.tier_type
+  seed.tier_unit
 from public.businesses business
 cross join (
   values
@@ -167,7 +167,7 @@ cross join (
       'Perfect for wedding and corporate events.', 'guests'),
     ('Shooter Package', '5 shooters per guest',
       'Best for debuts, birthdays, and college parties.', 'guests')
-) as seed(name, badge_text, description, tier_type)
+) as seed(name, badge_text, description, tier_unit)
 where business.slug = 'tipsy-tap';
 
 -- Inclusions shared by every tier of a package.
@@ -225,7 +225,7 @@ join (
 where business.slug = 'tipsy-tap';
 
 -- Fixed-price and per-unit variations belonging to a package.
--- The package's tier_type defines what tier_value measures.
+-- The package's tier_unit defines what tier_value measures.
 create table public.business_package_tiers (
   id uuid primary key default gen_random_uuid(),
   package_id uuid not null
@@ -292,7 +292,7 @@ create table public.business_package_tier_items (
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint business_package_tier_items_tier_type_name_unique
+  constraint business_package_tier_items_item_type_name_unique
     unique (package_tier_id, item_type, name),
   constraint business_package_tier_items_price_matches_type_check
     check (
@@ -413,8 +413,8 @@ create table public.quotations (
   selected_package_id uuid not null,
   selected_package_tier_id uuid not null,
   package_name text not null,
-  package_tier_type text not null check (
-    package_tier_type in ('guests', 'hours', 'units')
+  package_tier_unit text not null check (
+    nullif(btrim(package_tier_unit), '') is not null
   ),
   package_tier_value numeric(10,2) not null check (package_tier_value > 0),
   package_pricing_type text not null check (
