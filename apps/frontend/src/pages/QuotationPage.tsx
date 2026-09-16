@@ -3,7 +3,6 @@ import { CustomerDetailsDialog } from "@/components/quotation/CustomerDetailsDia
 import { EventDetails } from "@/components/quotation/EventDetails"
 import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { StickyOrderSummary } from "@/components/quotation/StickyOrderSummary"
-import { TierItems } from "@/components/quotation/TierItems"
 import { calculateQuotationTotals } from "@/lib/quotation-calculation"
 import type {
   BusinessInformation,
@@ -268,12 +267,7 @@ export function QuotationPage() {
                 packageInclusions={offerings.packageInclusions}
                 packageTiers={offerings.packageTiers}
                 packageTierItems={offerings.packageTierItems}
-              />
-
-              <TierItems
-                packageTierItems={offerings.packageTierItems}
-                selectedPackages={totals.selectedPackages}
-                form={form}
+                calculatedPackages={totals.selectedPackages}
               />
 
               <StickyOrderSummary

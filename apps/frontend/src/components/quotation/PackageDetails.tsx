@@ -1,3 +1,4 @@
+import { TierItems } from "@/components/quotation/TierItems"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -10,6 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { calculateTierTotal } from "@/lib/quotation-calculation"
 import type {
   BusinessPackage,
+  CalculatedPackage,
   PackageInclusion,
   PackageTier,
   PackageTierItem,
@@ -22,6 +24,7 @@ type PackageDetailsProps = {
   packageInclusions: PackageInclusion[]
   packageTiers: PackageTier[]
   packageTierItems: PackageTierItem[]
+  calculatedPackages: CalculatedPackage[]
   form: any
 }
 
@@ -30,6 +33,7 @@ export function PackageDetails({
   packageInclusions,
   packageTiers,
   packageTierItems,
+  calculatedPackages,
   form,
 }: PackageDetailsProps) {
   const selections = form.state.values.selectedPackages as Record<
@@ -61,79 +65,82 @@ export function PackageDetails({
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Select Packages</CardTitle>
-        <CardDescription>
-          Choose one size from every package you want to include.
-        </CardDescription>
-      </CardHeader>
+    <section className="space-y-4" aria-labelledby="select-packages-heading">
+      <div className="space-y-1">
+        <h2 id="select-packages-heading" className="text-lg font-semibold">
+          Select Packages
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Choose one or more packages for your event.
+        </p>
+      </div>
 
-      <CardContent className="space-y-4">
-        {packages.map((pkg) => {
-          const tiersForPackage = packageTiers
-            .filter((tier) => tier.package_id === pkg.id)
-            .sort((a, b) => a.tier_value - b.tier_value)
-          const selection = selections[pkg.id]
-          const selectedTier = tiersForPackage.find(
-            (tier) => tier.id === selection?.tierId
-          )
-          const sharedInclusions = packageInclusions
-            .filter((inclusion) => inclusion.package_id === pkg.id)
-            .sort((a, b) => a.sort_order - b.sort_order)
-          const tierInclusions = selectedTier
-            ? packageTierItems
-                .filter(
-                  (item) =>
-                    item.package_tier_id === selectedTier.id &&
-                    (item.item_type === "inclusion" ||
-                      item.item_type === "freebie")
-                )
-                .sort((a, b) => a.sort_order - b.sort_order)
-            : []
-          const displayedInclusions = [
-            ...tierInclusions.map((item) => ({
-              ...item,
-              displayKey: `tier-${item.id}`,
-            })),
-            ...sharedInclusions.map((item) => ({
-              ...item,
-              displayKey: `package-${item.id}`,
-            })),
-          ]
+      {packages.map((pkg) => {
+        const tiersForPackage = packageTiers
+          .filter((tier) => tier.package_id === pkg.id)
+          .sort((a, b) => a.tier_value - b.tier_value)
+        const selection = selections[pkg.id]
+        const selectedTier = tiersForPackage.find(
+          (tier) => tier.id === selection?.tierId
+        )
+        const calculatedPackage = calculatedPackages.find(
+          (entry) => entry.package.id === pkg.id
+        )
+        const sharedInclusions = packageInclusions
+          .filter((inclusion) => inclusion.package_id === pkg.id)
+          .sort((a, b) => a.sort_order - b.sort_order)
+        const tierInclusions = selectedTier
+          ? packageTierItems
+              .filter(
+                (item) =>
+                  item.package_tier_id === selectedTier.id &&
+                  (item.item_type === "inclusion" ||
+                    item.item_type === "freebie")
+              )
+              .sort((a, b) => a.sort_order - b.sort_order)
+          : []
+        const displayedInclusions = [
+          ...tierInclusions.map((item) => ({
+            ...item,
+            displayKey: `tier-${item.id}`,
+          })),
+          ...sharedInclusions.map((item) => ({
+            ...item,
+            displayKey: `package-${item.id}`,
+          })),
+        ]
 
-          return (
-            <section key={pkg.id} className="rounded-xl border bg-background p-4">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0 space-y-1">
-                  <h3 className="font-semibold">{pkg.name}</h3>
-                  {pkg.description && (
-                    <p className="text-sm text-muted-foreground">
-                      {pkg.description}
-                    </p>
-                  )}
-                </div>
-
-                {selectedTier && (
-                  <div className="shrink-0 text-right">
-                    <p className="font-semibold">
-                      ₱{calculateTierTotal(selectedTier).toLocaleString()}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="mt-1 h-7 px-2 text-xs text-muted-foreground"
-                      onClick={() => removePackage(pkg.id)}
-                    >
-                      <X className="size-3" />
-                      Remove
-                    </Button>
-                  </div>
+        return (
+          <Card key={pkg.id}>
+            <CardHeader className="flex flex-row items-start justify-between gap-4">
+              <div className="min-w-0 space-y-1">
+                <CardTitle>{pkg.name}</CardTitle>
+                {pkg.description && (
+                  <CardDescription>{pkg.description}</CardDescription>
                 )}
               </div>
 
-              <div className="mt-4 space-y-2">
+              {selectedTier && calculatedPackage && (
+                <div className="shrink-0 text-right">
+                  <p className="font-semibold">
+                    ₱{calculatedPackage.total.toLocaleString()}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1 h-7 px-2 text-xs text-muted-foreground"
+                    onClick={() => removePackage(pkg.id)}
+                  >
+                    <X className="size-3" />
+                    Remove
+                  </Button>
+                </div>
+              )}
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
                 <p className="text-sm font-medium">Choose a package size</p>
                 <ToggleGroup
                   type="single"
@@ -166,7 +173,7 @@ export function PackageDetails({
               </div>
 
               {displayedInclusions.length > 0 && (
-                <div className="mt-3 space-y-2 border-t pt-3">
+                <div className="space-y-2 border-t pt-3">
                   <p className="text-sm font-medium">Inclusions:</p>
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
                     {displayedInclusions.map((item) => (
@@ -182,10 +189,18 @@ export function PackageDetails({
                   </ul>
                 </div>
               )}
-            </section>
-          )
-        })}
-      </CardContent>
-    </Card>
+
+              {calculatedPackage && (
+                <TierItems
+                  selectedPackage={calculatedPackage}
+                  packageTierItems={packageTierItems}
+                  form={form}
+                />
+              )}
+            </CardContent>
+          </Card>
+        )
+      })}
+    </section>
   )
 }

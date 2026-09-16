@@ -1,7 +1,6 @@
 import { CustomerDetails } from "@/components/quotation/CustomerDetails"
 import { EventDetails } from "@/components/quotation/EventDetails"
 import { PackageDetails } from "@/components/quotation/PackageDetails"
-import { TierItems } from "@/components/quotation/TierItems"
 import { Button } from "@/components/ui/button"
 import { calculateQuotationTotals } from "@/lib/quotation-calculation"
 import type {
@@ -210,11 +209,7 @@ function EditQuotationForm({
                 packageInclusions={offerings.packageInclusions}
                 packageTiers={offerings.packageTiers}
                 packageTierItems={offerings.packageTierItems}
-              />
-              <TierItems
-                form={form}
-                packageTierItems={offerings.packageTierItems}
-                selectedPackages={totals.selectedPackages}
+                calculatedPackages={totals.selectedPackages}
               />
             </>
           )
