@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -5,16 +6,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  ToggleGroup,
-  ToggleGroupItem,
-} from "@/components/ui/toggle-group"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { calculateTierTotal } from "@/lib/quotation-calculation"
 import type {
   BusinessPackage,
   PackageInclusion,
   PackageTier,
   PackageTierItem,
+  SelectedPackageValue,
 } from "@/lib/types"
+import { X } from "lucide-react"
 
 type PackageDetailsProps = {
   packages: BusinessPackage[]
@@ -31,40 +32,40 @@ export function PackageDetails({
   packageTierItems,
   form,
 }: PackageDetailsProps) {
-  const selectedPackageId = form.state.values.selectedPackage
-  const selectedPackageTierId = form.state.values.selectedPackageTier
+  const selections = form.state.values.selectedPackages as Record<
+    string,
+    SelectedPackageValue
+  >
 
   function handleTierChange(packageId: string, tierId: string) {
-    // A single ToggleGroup returns an empty string when its selected item
-    // is clicked again. Ignore it so the selection cannot be cleared.
-    if (!tierId) {
-      return
-    }
+    if (!tierId) return
 
-    const selectionChanged =
-      selectedPackageId !== packageId ||
-      selectedPackageTierId !== tierId
+    const currentSelection = selections[packageId]
+    const tierChanged = currentSelection?.tierId !== tierId
 
-    form.setFieldValue("selectedPackage", packageId)
-    form.setFieldValue("selectedPackageTier", tierId)
-
-    if (selectionChanged) {
-      form.setFieldValue("selectedTierItems", {})
-    }
+    form.setFieldValue("selectedPackages", {
+      ...selections,
+      [packageId]: {
+        tierId,
+        selectedTierItems: tierChanged
+          ? {}
+          : currentSelection?.selectedTierItems ?? {},
+      },
+    })
   }
 
-  function calculateTierTotal(tier: PackageTier) {
-    return tier.pricing_type === "fixed"
-      ? tier.price
-      : tier.price * tier.tier_value
+  function removePackage(packageId: string) {
+    const nextSelections = { ...selections }
+    delete nextSelections[packageId]
+    form.setFieldValue("selectedPackages", nextSelections)
   }
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Select Package</CardTitle>
+        <CardTitle>Select Packages</CardTitle>
         <CardDescription>
-          Compare the available packages and choose a package size.
+          Choose one size from every package you want to include.
         </CardDescription>
       </CardHeader>
 
@@ -73,23 +74,13 @@ export function PackageDetails({
           const tiersForPackage = packageTiers
             .filter((tier) => tier.package_id === pkg.id)
             .sort((a, b) => a.tier_value - b.tier_value)
-
-          const isSelectedPackage = selectedPackageId === pkg.id
-
-          const selectedTier = isSelectedPackage
-            ? tiersForPackage.find(
-                (tier) => tier.id === selectedPackageTierId
-              )
-            : undefined
-
-          const displayedPrice = selectedTier
-            ? calculateTierTotal(selectedTier)
-            : null
-
+          const selection = selections[pkg.id]
+          const selectedTier = tiersForPackage.find(
+            (tier) => tier.id === selection?.tierId
+          )
           const sharedInclusions = packageInclusions
             .filter((inclusion) => inclusion.package_id === pkg.id)
             .sort((a, b) => a.sort_order - b.sort_order)
-
           const tierInclusions = selectedTier
             ? packageTierItems
                 .filter(
@@ -100,7 +91,6 @@ export function PackageDetails({
                 )
                 .sort((a, b) => a.sort_order - b.sort_order)
             : []
-
           const displayedInclusions = [
             ...tierInclusions.map((item) => ({
               ...item,
@@ -113,50 +103,49 @@ export function PackageDetails({
           ]
 
           return (
-            <section
-              key={pkg.id}
-              className="rounded-xl border bg-background p-4"
-            >
+            <section key={pkg.id} className="rounded-xl border bg-background p-4">
               <div className="flex items-start justify-between gap-4">
                 <div className="min-w-0 space-y-1">
                   <h3 className="font-semibold">{pkg.name}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    {pkg.description}
-                  </p>
+                  {pkg.description && (
+                    <p className="text-sm text-muted-foreground">
+                      {pkg.description}
+                    </p>
+                  )}
                 </div>
 
-                {displayedPrice !== null && (
-                  <p className="shrink-0 font-semibold">
-                    ₱{displayedPrice.toLocaleString()}
-                  </p>
+                {selectedTier && (
+                  <div className="shrink-0 text-right">
+                    <p className="font-semibold">
+                      ₱{calculateTierTotal(selectedTier).toLocaleString()}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1 h-7 px-2 text-xs text-muted-foreground"
+                      onClick={() => removePackage(pkg.id)}
+                    >
+                      <X className="size-3" />
+                      Remove
+                    </Button>
+                  </div>
                 )}
               </div>
 
               <div className="mt-4 space-y-2">
-                <p className="text-sm font-medium">
-                  Choose a package size
-                </p>
-
+                <p className="text-sm font-medium">Choose a package size</p>
                 <ToggleGroup
                   type="single"
                   variant="outline"
                   spacing={2}
-                  value={
-                    isSelectedPackage
-                      ? selectedPackageTierId
-                      : ""
-                  }
-                  onValueChange={(tierId) =>
-                    handleTierChange(pkg.id, tierId)
-                  }
+                  value={selection?.tierId ?? ""}
+                  onValueChange={(tierId) => handleTierChange(pkg.id, tierId)}
                   aria-label={`Choose a package size for ${pkg.name}`}
                   className="!grid w-full grid-cols-2 gap-2"
                 >
                   {tiersForPackage.map((tier) => {
-                    const priceText = `₱${calculateTierTotal(
-                      tier
-                    ).toLocaleString()}`
-
+                    const priceText = `₱${calculateTierTotal(tier).toLocaleString()}`
                     return (
                       <ToggleGroupItem
                         key={tier.id}
@@ -167,7 +156,6 @@ export function PackageDetails({
                         <span className="font-medium">
                           {tier.tier_value} {pkg.tier_unit}
                         </span>
-
                         <span className="text-xs text-muted-foreground">
                           {priceText}
                         </span>
@@ -180,13 +168,9 @@ export function PackageDetails({
               {displayedInclusions.length > 0 && (
                 <div className="mt-3 space-y-2 border-t pt-3">
                   <p className="text-sm font-medium">Inclusions:</p>
-
                   <ul className="space-y-1.5 text-sm text-muted-foreground">
                     {displayedInclusions.map((item) => (
-                      <li
-                        key={item.displayKey}
-                        className="flex gap-2"
-                      >
+                      <li key={item.displayKey} className="flex gap-2">
                         <span className="text-green-600">✓</span>
                         <span>
                           {item.quantity === 1

@@ -11,19 +11,21 @@ export type BusinessRow = {
   logo_url: string | null
 }
 
-export type BusinessResult =
-  | {
-      error: {
-        message: string
-        details?: string
-        status: 404 | 500
-      }
-    }
-  | {
-      business: BusinessRow
-    }
+export type ServiceError = {
+  message: string
+  details?: string
+  status: 400 | 404 | 409 | 500
+}
 
-// Payment method types
+export type BusinessResult =
+  | { error: ServiceError }
+  | { business: BusinessRow }
+
+export type ServiceResponse<T> =
+  | { data: T }
+  | { error: ServiceError }
+
+// Payment method types remain for the independent merchant settings API.
 export type PaymentMethodCategory =
   | "bank_transfer"
   | "e_wallet"
@@ -52,93 +54,113 @@ export type PaymentMethod = {
   isActive: boolean
 }
 
-// Reservation types
-export type SelectedPackageId = string
+export type PricingType = "fixed" | "per_unit"
+export type TierItemType = "inclusion" | "extra" | "upgrade" | "freebie"
+export type QuotationStatus = "open" | "accepted" | "booked" | "closed"
+export type CloseReason =
+  | "customer_chose_another_supplier"
+  | "no_response"
+  | "event_cancelled"
+  | "unavailable_on_event_date"
+  | "event_date_passed"
+  | "other"
 
-export type ReservationDbRow = {
-  id: string
-  quotation_reference: string
-  event_date: string
-  start_time: string
-  end_time: string
-  venue: string
-  occasion: string
-  guest_count: number
-  selected_package_id: SelectedPackageId
-  package_total: number
-  addons_total: number
-  transportation_fee: number
-  grand_total: number
-  status: string
-  payment_method_id: string | null
-  payment_proof_path: string | null
-  rejection_reason: string | null
-  customer_name: string
-  customer_email: string
-  customer_phone: string
-  created_at: string
-}
-
-export type SelectedReservationAddOn = {
-  addonId: string
-  addonName: string
-  addonPrice: number,
+export type SelectedTierItemInput = {
+  tierItemId: string
   quantity: number
 }
 
+export type SelectedPackageInput = {
+  packageId: string
+  tierId: string
+  selectedItems: SelectedTierItemInput[]
+}
 
-export type Reservation = {
+export type QuotationFormBody = {
+  eventDate: string
+  startTime: string
+  endTime: string
+  venue: string
+  venuePlaceId?: string
+  venueLocality: string
+  venueRegion: string
+  occasion: string
+  guestCount: number
+  packages: SelectedPackageInput[]
+  customerName: string
+  customerEmail: string
+  customerPhone: string
+}
+
+export type QuotationInclusion = {
+  id: string
+  itemType: "inclusion" | "freebie"
+  name: string
+  quantity: number
+  unit: string
+  description: string | null
+  sortOrder: number
+}
+
+export type QuotationItem = {
+  id: string
+  tierItemId: string | null
+  itemType: "extra" | "upgrade"
+  name: string
+  description: string | null
+  unit: string
+  unitPrice: number
+  quantity: number
+  lineTotal: number
+}
+
+export type QuotationPackage = {
+  id: string
+  packageId: string | null
+  tierId: string | null
+  packageName: string
+  tierUnit: string
+  tierValue: number
+  pricingType: PricingType
+  price: number
+  packageTotal: number
+  selectedItemsTotal: number
+  total: number
+  sortOrder: number
+  inclusions: QuotationInclusion[]
+  selectedItems: QuotationItem[]
+}
+
+export type Quotation = {
   id: string
   quotationReference: string
-  eventDate: string
-  startTime: string
-  endTime: string
-  venue: string
-  guestCount: number
-  selectedPackageId: SelectedPackageId
-  selectedAddOns: SelectedReservationAddOn[],
-  packageTotal: number
-  addOnsTotal: number
-  grandTotal: number
-  selectedPackageName?: string
-  reservationStatus?: string
-  paymentMethodId?: string | null
-  paymentProofPath?: string | null
-  rejectionReason?: string | null
-  customerName: string
-  customerEmail: string
-  customerPhone: string
-  transportationFee: number
-  occasion: string
+  businessId: string
   createdAt: string
-}
-
-export type ReservationFormBody = {
+  updatedAt: string
   eventDate: string
   startTime: string
   endTime: string
   venue: string
+  venuePlaceId: string | null
+  venueLocality: string
+  venueRegion: string
+  occasion: string
   guestCount: number
-  selectedPackageId: string
-  packageTotal: number
-  addOnsTotal: number
-  grandTotal: number
-  selectedAddOns: Record<string, number>
-  transportationFee: number
   customerName: string
   customerEmail: string
   customerPhone: string
-  occasion: string
+  packages: QuotationPackage[]
+  packagesTotal: number
+  selectedItemsTotal: number
+  transportationFee: number
+  grandTotal: number
+  quotationStatus: QuotationStatus
+  closeReason: CloseReason | null
+  closeReasonNotes: string | null
 }
 
-
-// Service response type
-export type ServiceResponse<T> =
-  | { data: T }
-  | {
-      error: {
-        message: string
-        details?: string
-        status: 404 | 500
-      }
-    }
+export type UpdateQuotationStatusBody = {
+  quotationStatus: QuotationStatus
+  closeReason?: CloseReason | null
+  closeReasonNotes?: string | null
+}

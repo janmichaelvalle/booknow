@@ -1,51 +1,52 @@
-import { EventDetails } from "@/components/quotation/EventDetails";
+import { BusinessHeader } from "@/components/quotation/BusinessHeader"
+import { CustomerDetailsDialog } from "@/components/quotation/CustomerDetailsDialog"
+import { EventDetails } from "@/components/quotation/EventDetails"
 import { PackageDetails } from "@/components/quotation/PackageDetails"
+import { StickyOrderSummary } from "@/components/quotation/StickyOrderSummary"
 import { TierItems } from "@/components/quotation/TierItems"
-
-import { CustomerDetailsDialog } from "@/components/quotation/CustomerDetailsDialog";
-
-import * as z from "zod"
-import { useNavigate, useParams } from "react-router-dom"
-import { type Offerings, type QuotationValues, type CoverageResult } from "@/lib/types"
+import { calculateQuotationTotals } from "@/lib/quotation-calculation"
+import type {
+  BusinessInformation,
+  CoverageResult,
+  Offerings,
+  QuotationValues,
+} from "@/lib/types"
 import { useForm } from "@tanstack/react-form"
 import { useQuery } from "@tanstack/react-query"
-
-import { calculateQuotationTotals } from "@/lib/quotation-calculation";
-
-import { useState } from "react";
-
-import { ConfirmDialog } from "@/components/ui/confirm-dialog"
+import { useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
 import { toast } from "sonner"
-import { type BusinessInformation } from "@/lib/types";
-import { BusinessHeader } from "@/components/quotation/BusinessHeader";
-import { StickyOrderSummary } from "@/components/quotation/StickyOrderSummary"
+import * as z from "zod"
 
+const selectedPackageSchema = z.object({
+  tierId: z.string().min(1),
+  selectedTierItems: z.record(z.string(), z.number().int().min(0)),
+})
 
-// The quotationSchema validates the user inputs 
 const quotationDetailsSchema = z
   .object({
     eventDate: z.date({
       error: (issue) =>
-        issue.input === undefined
-          ? "Event date is required"
-          : "Invalid date",
+        issue.input === undefined ? "Event date is required" : "Invalid date",
     }),
     startTime: z.string().min(1, "Start time is required"),
     endTime: z.string().min(1, "End time is required"),
     venue: z.string().min(1, "Venue is required"),
+    venuePlaceId: z.string(),
+    venueLocality: z.string().min(1, "Select a venue from the suggestions"),
+    venueRegion: z.string().min(1, "Select a venue from the suggestions"),
     occasion: z.string().min(1, "Occasion is required"),
     occasionOther: z.string(),
-    guestCount: z
-      .number()
-      .int()
-      .min(1, "Guest count must be at least 1"),
-    selectedPackage: z.string().min(1, "Package is required"),
-    selectedPackageTier: z.string().min(1, "Package tier is required"),
+    guestCount: z.number().int().min(1, "Guest count must be at least 1"),
+    selectedPackages: z
+      .record(z.string(), selectedPackageSchema)
+      .refine((packages) => Object.keys(packages).length > 0, {
+        message: "At least one package is required",
+      }),
   })
   .refine(
     (values) =>
-      values.occasion !== "other" ||
-      values.occasionOther.trim().length > 0,
+      values.occasion !== "other" || values.occasionOther.trim().length > 0,
     {
       message: "Please specify the occasion",
       path: ["occasionOther"],
@@ -53,182 +54,144 @@ const quotationDetailsSchema = z
   )
 
 const quotationSchema = quotationDetailsSchema.safeExtend({
-  selectedTierItems: z.record(z.string(), z.number()),
   customerName: z.string().min(1, "Name is required"),
   customerEmail: z.email("Valid email is required"),
   customerPhone: z.string().min(1, "Phone number is required"),
 })
 
-
-
+const emptyOfferings: Offerings = {
+  packages: [],
+  packageInclusions: [],
+  packageTiers: [],
+  packageTierItems: [],
+}
 
 export function QuotationPage() {
-
-  const [venueCoverage, setVenueCoverage] =
-    useState<CoverageResult | null>(null)
-
   const navigate = useNavigate()
   const { businessSlug } = useParams()
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [venueCoverage, setVenueCoverage] = useState<CoverageResult | null>(null)
   const [isCustomerDetailsOpen, setIsCustomerDetailsOpen] = useState(false)
-
 
   const defaultValues: QuotationValues = {
     eventDate: undefined,
     startTime: "",
     endTime: "",
     venue: "",
+    venuePlaceId: "",
+    venueLocality: "",
+    venueRegion: "",
     occasion: "",
     occasionOther: "",
     guestCount: undefined,
-    selectedPackage: "",
-    selectedPackageTier: "",
-    selectedTierItems: {},
+    selectedPackages: {},
     customerName: "",
     customerEmail: "",
-    customerPhone: ""
+    customerPhone: "",
   }
 
   const { data: business } = useQuery({
     queryKey: ["business", businessSlug],
     queryFn: async (): Promise<BusinessInformation> => {
-      const res = await fetch(
+      const response = await fetch(
         `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}`
       )
-      if (!res.ok) {
-        throw new Error("Failed to fetch business information")
-      }
-      const result = await res.json()
-      return result.data
+      if (!response.ok) throw new Error("Failed to fetch business information")
+      return (await response.json()).data
     },
-
     enabled: !!businessSlug,
   })
 
-  const { data: offerings, isPending: isOfferingPending, error: offeringsError } = useQuery({
+  const {
+    data: offerings = emptyOfferings,
+    isPending: isOfferingsPending,
+    error: offeringsError,
+  } = useQuery({
     queryKey: ["offerings", businessSlug],
     queryFn: async (): Promise<Offerings> => {
-      const res = await fetch(`${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/offerings`)
-      if (!res.ok) {
-        throw new Error("Failed to fetch offerings")
-      }
-      const data = await res.json()
-      return data.data ?? {
-        packages: [],
-        packageInclusions: [],
-        packageTiers: [],
-        packageTierItems: [],
-      }
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/offerings`
+      )
+      if (!response.ok) throw new Error("Failed to fetch offerings")
+      return (await response.json()).data ?? emptyOfferings
     },
     enabled: !!businessSlug,
-    initialData: {
-      packages: [],
-      packageInclusions: [],
-      packageTiers: [],
-      packageTierItems: [],
-    }
   })
 
-
   const form = useForm({
-    // Inital form state
-    defaultValues: defaultValues,
-    // Everytime a form values changes, checks the quotationSchema
-    validators: {
-      // onChange: quotationSchema,
-      onSubmit: quotationSchema,
-    },
+    defaultValues,
+    validators: { onSubmit: quotationSchema },
     onSubmit: async ({ value }) => {
-      console.log("Submit reached")
-      console.log(value)
-      if (!businessSlug) {
-        console.error("Business slug is missing from the URL")
-        return
+      if (!businessSlug || !value.eventDate) {
+        throw new Error("Missing required quotation information")
       }
 
-      if (!value.eventDate) {
-        console.error("Event date is required")
-        return
-      }
+      const packages = Object.entries(value.selectedPackages).map(
+        ([packageId, selection]) => ({
+          packageId,
+          tierId: selection.tierId,
+          selectedItems: Object.entries(selection.selectedTierItems)
+            .filter(([, quantity]) => quantity > 0)
+            .map(([tierItemId, quantity]) => ({ tierItemId, quantity })),
+        })
+      )
 
-      const transportationFee = venueCoverage?.transportationFee ?? 0
-      const totals = calculateQuotationTotals(value, offerings)
-      const grandTotal = totals.grandTotal + transportationFee
-
-
-      const payload = {
-        eventDate: value.eventDate.toISOString(),
-        startTime: value.startTime,
-        endTime: value.endTime,
-        venue: value.venue,
-        occasion:
-          value.occasion === "other"
-            ? value.occasionOther.trim()
-            : value.occasion,
-        guestCount: value.guestCount,
-        selectedPackageId: value.selectedPackage,
-        selectedAddOns: value.selectedAddOns,
-        packageTotal: totals.packageTotal,
-        addOnsTotal: totals.addOnsTotal,
-        transportationFee: transportationFee,
-        grandTotal: grandTotal,
-        customerName: value.customerName,
-        customerEmail: value.customerEmail,
-        customerPhone: value.customerPhone,
-      }
-
-      const res = await fetch(
-        `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/reservation`,
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/quotations`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            eventDate: value.eventDate.toISOString(),
+            startTime: value.startTime,
+            endTime: value.endTime,
+            venue: value.venue,
+            venuePlaceId: value.venuePlaceId,
+            venueLocality: value.venueLocality,
+            venueRegion: value.venueRegion,
+            occasion:
+              value.occasion === "other"
+                ? value.occasionOther.trim()
+                : value.occasion,
+            guestCount: value.guestCount,
+            packages,
+            customerName: value.customerName,
+            customerEmail: value.customerEmail,
+            customerPhone: value.customerPhone,
+          }),
         }
       )
 
-      if (!res.ok) {
-        console.error("Failed to create reservation")
-        return
+      const result = await response.json()
+      if (!response.ok) {
+        throw new Error(result.error ?? result.message ?? "Failed to create quotation")
       }
 
-      const json = await res.json()
-      const reservationId = json?.data?.id
-
-      if (!reservationId) {
-        console.error("Reservation ID missing in response")
-        return
-      }
-
-      navigate(`/${businessSlug}/reservation/${reservationId}`)
+      navigate(`/${businessSlug}/${result.data.quotationReference}`)
     },
   })
 
-
-
   function handleGetMyQuotationClick() {
     const result = quotationDetailsSchema.safeParse(form.state.values)
-
-
     if (!result.success) {
       const fieldLabels: Record<string, string> = {
         eventDate: "event date",
         startTime: "start time",
         endTime: "end time",
         venue: "venue",
+        venueLocality: "venue from the suggestions",
+        venueRegion: "venue from the suggestions",
+        occasion: "occasion",
+        occasionOther: "occasion",
         guestCount: "number of guests",
-        selectedPackage: "package",
-        selectedPackageTier: "package tier",
+        selectedPackages: "package",
       }
-
       const missingFields = [
         ...new Set(
-          result.error.issues.map((issue) => {
-            const fieldName = String(issue.path[0])
-            return fieldLabels[fieldName] ?? fieldName
-          })
+          result.error.issues.map(
+            (issue) => fieldLabels[String(issue.path[0])] ?? String(issue.path[0])
+          )
         ),
       ]
-
       const formattedFields = new Intl.ListFormat("en", {
         style: "long",
         type: "conjunction",
@@ -237,7 +200,6 @@ export function QuotationPage() {
       toast.error(`Please provide the ${formattedFields}.`, {
         position: "top-center",
       })
-
       return
     }
 
@@ -245,130 +207,92 @@ export function QuotationPage() {
       toast.error("Please select a venue within the service area", {
         position: "top-center",
       })
-
       return
     }
 
     setIsCustomerDetailsOpen(true)
   }
 
-
   async function handleCreateMyQuotationClick() {
     await form.validate("submit")
-
     if (!form.state.isFormValid) {
       toast.error("Please provide your complete customer details.", {
         position: "top-center",
       })
-
       return
     }
 
-    await toast.promise(
-      async () => {
-        await form.handleSubmit()
-      },
-      {
-        loading: "Creating your quotation...",
-        success: "Your quotation was created successfully.",
-        error: "Something went wrong. Please try again.",
-        position: "top-center",
-      }
-    )
+    await toast.promise(form.handleSubmit(), {
+      loading: "Creating your quotation...",
+      success: "Your quotation was created successfully.",
+      error: (error) =>
+        error instanceof Error ? error.message : "Something went wrong.",
+      position: "top-center",
+    })
   }
 
+  if (isOfferingsPending) return <p className="p-4">Loading packages...</p>
+  if (offeringsError) return <p className="p-4">Failed to load packages.</p>
 
   return (
-    <>
-      <form
-        onSubmit={(e) => {
-          console.log("Form submit event fired")
-          console.log("Current form values:", form.state.values)
-          e.preventDefault()
-          e.stopPropagation()
-          handleCreateMyQuotationClick()
-        }}
-        className="space-y-6 pb-40"
-      >
-        {business && (
-          <BusinessHeader
-            logoUrl={business.logo_url ?? ""}
-            businessName={business.name}
-            description={business.description ?? ""}
-          />
-        )}
-        <EventDetails
-          form={form}
-          venueCoverage={venueCoverage}
-          onVenueCoverageChange={setVenueCoverage}
+    <form
+      onSubmit={(event) => {
+        event.preventDefault()
+        event.stopPropagation()
+        void handleCreateMyQuotationClick()
+      }}
+      className="space-y-6 pb-40"
+    >
+      {business && (
+        <BusinessHeader
+          logoUrl={business.logo_url ?? ""}
+          businessName={business.name}
+          description={business.description ?? ""}
         />
-        {/* form.Subscribe watches part of the TanStack form state.
-        The selector receives the full form state and returns only state.values,
-        so this UI re-renders when the form values change. */}
-        <form.Subscribe selector={(state) => state.values}>
-          {(values) => {
-            const totals = calculateQuotationTotals(values, offerings)
+      )}
 
+      <EventDetails
+        form={form}
+        venueCoverage={venueCoverage}
+        onVenueCoverageChange={setVenueCoverage}
+      />
 
-            return (
-              <>
-                <PackageDetails
-                  form={form}
-                  packages={offerings.packages}
-                  packageInclusions={offerings.packageInclusions}
-                  packageTiers={offerings.packageTiers}
-                  packageTierItems={offerings.packageTierItems}
-                />
+      <form.Subscribe selector={(state) => state.values}>
+        {(values) => {
+          const totals = calculateQuotationTotals(values, offerings)
+          return (
+            <>
+              <PackageDetails
+                form={form}
+                packages={offerings.packages}
+                packageInclusions={offerings.packageInclusions}
+                packageTiers={offerings.packageTiers}
+                packageTierItems={offerings.packageTierItems}
+              />
 
-                <TierItems
-                  packageTierItems={offerings.packageTierItems}
-                  selectedPackageTierId={totals.selectedTier?.id ?? ""}
-                  form={form}
-                />
+              <TierItems
+                packageTierItems={offerings.packageTierItems}
+                selectedPackages={totals.selectedPackages}
+                form={form}
+              />
 
+              <StickyOrderSummary
+                basePrice={totals.packagesTotal}
+                addOnsPrice={totals.selectedItemsTotal}
+                transportationFee={venueCoverage?.transportationFee ?? 0}
+                onGetMyQuotationButtonClick={handleGetMyQuotationClick}
+              />
 
-                <StickyOrderSummary
-                  basePrice={totals.packageTotal}
-                  addOnsPrice={totals.selectedItemsTotal}
-                  transportationFee={venueCoverage?.transportationFee ?? 0}
-                  onGetMyQuotationButtonClick={handleGetMyQuotationClick}
-                />
-
-                <CustomerDetailsDialog
-                  form={form}
-                  onCreateMyQuotationButtonClick={handleCreateMyQuotationClick}
-                  open={isCustomerDetailsOpen}
-                  onOpenChange={setIsCustomerDetailsOpen}
-                />
-
-
-              </>
-            )
-          }}
-        </form.Subscribe>
-      </form>
-      <ConfirmDialog
-        open={isConfirmOpen}
-        onOpenChange={setIsConfirmOpen}
-        onConfirm={async () => {
-          await toast.promise(
-            async () => {
-              await form.handleSubmit()
-              setIsConfirmOpen(false)
-            },
-            {
-              loading: "Submitting your reservation...",
-              success: "Your reservation has been submitted successfully",
-              error: "Something went wrong. Please try again.",
-              position: "top-center",
-            }
+              <CustomerDetailsDialog
+                form={form}
+                onCreateMyQuotationButtonClick={handleCreateMyQuotationClick}
+                open={isCustomerDetailsOpen}
+                onOpenChange={setIsCustomerDetailsOpen}
+              />
+            </>
           )
         }}
-
-      />
-    </>
-
-
+      </form.Subscribe>
+    </form>
   )
-
 }

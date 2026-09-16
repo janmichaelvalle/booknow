@@ -66,7 +66,7 @@ export function LoginPage() {
       return
     }
 
-    navigate(`/${businessSlug}/reservations`)
+    navigate(`/${businessSlug}/quotations`)
 
     // await pauses until the backend responds and const response stores the server's response
     // const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/login`,
@@ -93,7 +93,6 @@ export function LoginPage() {
   // function handleLogin(email: string, password:string) { 
   //   // fake login
   //   login();
-  //   navigate("/reservations");
   //   console.log(email)
   //   console.log(password)
   // }

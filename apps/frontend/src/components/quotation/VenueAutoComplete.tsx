@@ -1,20 +1,22 @@
 import { useEffect, useRef } from "react"
 import { importLibrary } from "@googlemaps/js-api-loader"
+import type { VenueSelection } from "@/lib/types"
 
-export type CoverageResult = {
-  isCovered: boolean
-  transportationFee: number | null
+type CoverageInput = {
+  city?: string | null
+  region?: string | null
+}
+
+type PlaceSelectEvent = Event & {
+  placePrediction: google.maps.places.PlacePrediction
 }
 
 type VenueAutocompleteProps = {
   venue: string
-  onVenueSelect: (
-    address: string,
-    coverage: CoverageResult
-  ) => void
+  onVenueSelect: (selection: VenueSelection) => void
 }
 
-function normalizeAreaName(value?: string) {
+function normalizeAreaName(value?: string | null) {
   return value
     ?.normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -63,6 +65,12 @@ export function VenueAutocomplete({
   onVenueSelect,
 }: VenueAutocompleteProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const onVenueSelectRef = useRef(onVenueSelect)
+  const initialVenueRef = useRef(venue)
+
+  useEffect(() => {
+    onVenueSelectRef.current = onVenueSelect
+  }, [onVenueSelect])
 
   useEffect(() => {
     let cancelled = false
@@ -84,9 +92,10 @@ export function VenueAutocomplete({
       element.placeholder = "Search for a venue or address"
       element.includedRegionCodes = ["ph"]
       element.style.width = "100%"
-      element.value = venue
+      element.value = initialVenueRef.current
 
-      element.addEventListener("gmp-select", async (event) => {
+      element.addEventListener("gmp-select", async (rawEvent) => {
+        const event = rawEvent as PlaceSelectEvent
         const place = event.placePrediction.toPlace()
 
         await place.fetchFields({
@@ -152,7 +161,13 @@ console.log("Complete result:", venueResult)
 
         if (selectedVenue) {
           element.value = selectedVenue
-          onVenueSelect(selectedVenue, coverageResult)
+          onVenueSelectRef.current({
+            address: selectedVenue,
+            placeId: place.id ?? "",
+            locality: city ?? "",
+            region: region ?? "",
+            coverage: coverageResult,
+          })
         }
 
       })

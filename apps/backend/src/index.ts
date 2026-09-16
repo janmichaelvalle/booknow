@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import reservationRoutes from '../routes/reservation.routes.js'
+import quotationRoutes from '../routes/quotation.routes.js'
 import paymentMethodRoutes from '../routes/payment-method.routes.js'
 import businessRoutes from '../routes/business.routes.js' 
 import { businessMiddleware } from "../middlewares/business.middleware.js";
@@ -26,7 +26,7 @@ app.use('/api/businesses/:businessSlug/*', businessMiddleware)
 
 app.get('/api/health', (c) => c.json({ ok: true }))
 
-app.route('/', reservationRoutes)
+app.route('/', quotationRoutes)
 app.route('/', paymentMethodRoutes)
 app.route('/', businessRoutes)
 

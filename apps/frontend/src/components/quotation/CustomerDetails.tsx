@@ -13,7 +13,7 @@ export function CustomerDetails({ form }: CustomerDetailsProps) {
       <CardHeader>
         <CardTitle>Customer Details</CardTitle>
         <CardDescription>
-          Tell us who we should contact for this reservation
+          Tell us who we should contact about this quotation
         </CardDescription>
       </CardHeader>
 

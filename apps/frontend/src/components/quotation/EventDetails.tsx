@@ -38,8 +38,8 @@ import { CalendarDays, MapPin, Users, CalendarClock } from "lucide-react"
 
 import {
   VenueAutocomplete,
-  type CoverageResult
 } from "./VenueAutoComplete"
+import type { CoverageResult } from "@/lib/types"
 
 type EventDetailsProps = {
   form: any
@@ -170,12 +170,18 @@ export function EventDetails({ form, venueCoverage,
                 </FieldLabel>
                 <VenueAutocomplete
                   venue={field.state.value ?? ""}
-                  onVenueSelect={(address, coverage) => {
-                    onVenueCoverageChange(coverage)
-                    if (coverage.isCovered) {
-                      field.handleChange(address)
+                  onVenueSelect={(selection) => {
+                    onVenueCoverageChange(selection.coverage)
+                    if (selection.coverage.isCovered) {
+                      field.handleChange(selection.address)
+                      form.setFieldValue("venuePlaceId", selection.placeId)
+                      form.setFieldValue("venueLocality", selection.locality)
+                      form.setFieldValue("venueRegion", selection.region)
                     } else {
                       field.handleChange("")
+                      form.setFieldValue("venuePlaceId", "")
+                      form.setFieldValue("venueLocality", "")
+                      form.setFieldValue("venueRegion", "")
                     }
                   }}
                 />

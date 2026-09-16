@@ -20,4 +20,18 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  {
+    // TanStack Form APIs are passed through reusable quotation fields.
+    files: ['src/components/quotation/**/*.{ts,tsx}'],
+    rules: { '@typescript-eslint/no-explicit-any': 'off' },
+  },
+  {
+    // shadcn modules intentionally export style helpers with components.
+    files: ['src/components/ui/**/*.{ts,tsx}', 'src/context/AuthContext.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
+  {
+    files: ['src/context/AuthContext.tsx'],
+    rules: { 'react-hooks/set-state-in-effect': 'off' },
+  },
 ])

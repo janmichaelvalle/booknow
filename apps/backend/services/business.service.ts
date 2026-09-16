@@ -13,7 +13,7 @@ export async function getBusinessBySlugOrError(slug: string): Promise<BusinessRe
       error: {
         message: 'Failed to fetch business',
         details: error.message,
-        status: 500,
+        status: 500 as const,
       }
     }
   }
@@ -21,7 +21,7 @@ export async function getBusinessBySlugOrError(slug: string): Promise<BusinessRe
     return {
       error: {
         message: "Business not found",
-        status: 404,
+        status: 404 as const,
       }
     }
   }
@@ -43,7 +43,7 @@ export async function getAllOfferings(businessId: string) {
       error: {
         message: "Failed to fetch packages",
         details: packagesResult.error.message,
-        status: 500,
+        status: 500 as const,
       }
     }
   }
@@ -53,7 +53,7 @@ export async function getAllOfferings(businessId: string) {
     return {
       error: {
         message: "No packages found",
-        status: 404,
+        status: 404 as const,
       }
     }
   }
@@ -71,7 +71,7 @@ export async function getAllOfferings(businessId: string) {
       error: {
         message: "Failed to fetch package inclusions",
         details: packageInclusionsResult.error.message,
-        status: 500,
+        status: 500 as const,
       },
     }
   }
@@ -90,7 +90,7 @@ export async function getAllOfferings(businessId: string) {
       error: {
         message: "Failed to fetch package tiers",
         details: packageTiersResult.error.message,
-        status: 500,
+        status: 500 as const,
       },
     }
   }
@@ -99,7 +99,7 @@ export async function getAllOfferings(businessId: string) {
     return {
       error: {
         message: "No active package tiers found",
-        status: 404,
+        status: 404 as const,
       },
     }
   }
@@ -128,7 +128,7 @@ export async function getAllOfferings(businessId: string) {
       error: {
         message: "Failed to fetch package tier items",
         details: packageTierItemsResult.error.message,
-        status: 500,
+        status: 500 as const,
       },
     }
   }
