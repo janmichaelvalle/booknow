@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate, Outlet } from "react-router-dom"
+import { Routes, Route, Navigate, Outlet, useMatch } from "react-router-dom"
 import { QuotationPage } from "./pages/QuotationPage"
 import { QuotationDetailsPage } from "./pages/QuotationDetailsPage"
 import { QuotationsListPage } from "./pages/QuotationsListPage"
@@ -33,11 +33,16 @@ function ProtectedPage() {
   // 1. check auth status
   // 2. redirect to login if not logged in
 
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, merchant } = useAuth()
+  const businessSlug = useMatch("/:businessSlug/quotations")?.params.businessSlug
 
   if (isLoading) return null
 
   if (!isAuthenticated) return <Navigate to="/login" replace />
+
+  if (businessSlug !== merchant?.businessSlug) {
+    return <Navigate to={`/${merchant?.businessSlug}/quotations`} replace />
+  }
 
   return <Outlet />
 }

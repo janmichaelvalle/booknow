@@ -1,5 +1,9 @@
 import { Hono } from "hono"
 import {
+  merchantAuthMiddleware,
+  merchantBusinessMiddleware,
+} from "../middlewares/merchant.middleware.js"
+import {
   createQuotationController,
   getAllQuotationsController,
   getQuotationController,
@@ -9,7 +13,12 @@ import {
 
 const app = new Hono()
 
-app.get("/api/businesses/:businessSlug/quotations", getAllQuotationsController)
+app.get(
+  "/api/businesses/:businessSlug/quotations",
+  merchantAuthMiddleware,
+  merchantBusinessMiddleware,
+  getAllQuotationsController
+)
 app.get(
   "/api/businesses/:businessSlug/quotations/:quotationReference",
   getQuotationController
@@ -21,6 +30,8 @@ app.put(
 )
 app.put(
   "/api/businesses/:businessSlug/quotations/:quotationReference/status",
+  merchantAuthMiddleware,
+  merchantBusinessMiddleware,
   updateQuotationStatusController
 )
 

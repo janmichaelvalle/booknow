@@ -1143,4 +1143,31 @@ begin
 end;
 $$;
 
+-- Browser clients use Supabase Auth only; application data goes through the API.
+-- The backend service-role client bypasses RLS for approved public/merchant flows.
+alter table public.businesses enable row level security;
+alter table public.users enable row level security;
+alter table public.business_packages enable row level security;
+alter table public.business_package_inclusions enable row level security;
+alter table public.business_package_tiers enable row level security;
+alter table public.business_package_tier_items enable row level security;
+alter table public.quotations enable row level security;
+alter table public.quotation_packages enable row level security;
+alter table public.quotation_inclusions enable row level security;
+alter table public.quotation_items enable row level security;
+alter table public.service_areas enable row level security;
+alter table public.business_service_areas enable row level security;
+
+revoke all on table
+  public.businesses, public.users, public.business_packages,
+  public.business_package_inclusions, public.business_package_tiers,
+  public.business_package_tier_items, public.quotations,
+  public.quotation_packages, public.quotation_inclusions,
+  public.quotation_items, public.service_areas,
+  public.business_service_areas
+from anon, authenticated;
+
+revoke execute on function public.save_quotation(uuid, jsonb, uuid)
+  from public, anon, authenticated;
+
 commit;

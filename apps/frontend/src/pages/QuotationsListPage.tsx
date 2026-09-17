@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import useAuth from "@/context/useAuth"
+import { merchantFetch } from "@/lib/merchant-api"
 import type { Quotation } from "@/lib/types"
 import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
@@ -9,22 +10,21 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 export function QuotationsListPage() {
   const navigate = useNavigate()
   const { businessSlug } = useParams()
-  const { logout } = useAuth()
+  const { logout, merchant } = useAuth()
 
-  const { data: quotations = [], isPending } = useQuery({
+  const { data: quotations = [], isPending, error } = useQuery({
     queryKey: ["quotations", businessSlug],
     queryFn: async (): Promise<Quotation[]> => {
-      const response = await fetch(
-        `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/quotations`
-      )
+      const response = await merchantFetch(`/api/businesses/${businessSlug}/quotations`)
       if (!response.ok) throw new Error("Failed to fetch quotations")
       return (await response.json()).data ?? []
     },
-    enabled: !!businessSlug,
+    enabled: !!businessSlug && merchant?.businessSlug === businessSlug,
   })
 
   if (!businessSlug) return <p>Missing business slug.</p>
   if (isPending) return <p className="p-4">Loading quotations...</p>
+  if (error) return <p role="alert" className="p-4">Could not load quotations. Please try again.</p>
 
   return (
     <div className="space-y-4 p-4">

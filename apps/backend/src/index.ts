@@ -3,6 +3,7 @@ import { cors } from 'hono/cors'
 import quotationRoutes from '../routes/quotation.routes.js'
 import paymentMethodRoutes from '../routes/payment-method.routes.js'
 import businessRoutes from '../routes/business.routes.js' 
+import merchantRoutes from '../routes/merchant.routes.js'
 import { businessMiddleware } from "../middlewares/business.middleware.js";
 
 
@@ -29,6 +30,7 @@ app.get('/api/health', (c) => c.json({ ok: true }))
 app.route('/', quotationRoutes)
 app.route('/', paymentMethodRoutes)
 app.route('/', businessRoutes)
+app.route('/', merchantRoutes)
 
 
 export default app

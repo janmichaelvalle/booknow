@@ -1,86 +1,98 @@
-/* AuthContext should mainly answer:
-is the user authenticated?
-who is the user?
-how do I log out?
-*/
+import { createContext, useCallback, useEffect, useRef, useState } from "react"
+import type { ReactNode } from "react"
+import { useQueryClient } from "@tanstack/react-query"
+import { supabase } from "@/lib/supabase"
 
+export type Merchant = {
+  authUserId: string
+  businessId: string
+  businessName: string
+  businessSlug: string
+}
 
-import { useState, useEffect, createContext } from 'react';
-import type { ReactNode } from "react";
-import { supabase } from "@/lib/supabase";
-
-type AuthProviderProps = {
-  children: ReactNode;
-};
-
-// Shape of the auth data
 type AuthContextType = {
-  isAuthenticated: boolean;
-  isLoading: boolean;
-  logout: () => void;
-};
+  merchant: Merchant | null
+  isAuthenticated: boolean
+  isLoading: boolean
+  refreshMerchant: () => Promise<Merchant | null>
+  logout: () => Promise<void>
+}
 
-// createContext React docs
-// These are just fallback balues so React knows the shape of the context
-export const AuthContext = createContext<AuthContextType>({
-  isAuthenticated: false,
-  isLoading: false,
-  logout: () => { },
-});
+export const AuthContext = createContext<AuthContextType | null>(null)
 
-
-// Not in react docs, but we need to wrap the AuthContext to manage auth states (FOCUS ON THIS)
-export default function AuthProvider({ children }: AuthProviderProps) {
-  // Adds an isAuthenticated state
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+export default function AuthProvider({ children }: { children: ReactNode }) {
+  const [merchant, setMerchant] = useState<Merchant | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const requestId = useRef(0)
+  const queryClient = useQueryClient()
 
-
-  useEffect(() => {
-    
+  const loadMerchant = useCallback(async (token: string | undefined): Promise<Merchant | null> => {
+    const currentRequest = ++requestId.current
+    if (!token) {
+      setMerchant(null)
+      setIsLoading(false)
+      queryClient.removeQueries({ queryKey: ["quotations"] })
+      return null
+    }
 
     setIsLoading(true)
-    // An async function that awaits the result of getSession(). If session exists and there is no error, user is authenticated
-
-    
-    async function loadSession() {
-      const { data, error } = await supabase.auth.getSession()
-      setIsAuthenticated(Boolean(data.session) && !error)
-      setIsLoading(false)
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BASE_URL}/api/me`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!response.ok) throw new Error("Could not load merchant account")
+      const result = await response.json() as { data: Merchant }
+      if (currentRequest === requestId.current) setMerchant(result.data)
+      return result.data
+    } catch (error) {
+      if (currentRequest === requestId.current) setMerchant(null)
+      throw error
+    } finally {
+      if (currentRequest === requestId.current) setIsLoading(false)
     }
+  }, [queryClient])
 
-    // Call the async function
-    loadSession()
+  async function refreshMerchant() {
+    const { data, error } = await supabase.auth.getSession()
+    if (error) throw error
+    return loadMerchant(data.session?.access_token)
+  }
 
-    /* onAuthStateChange documentation
-    https://supabase.com/docs/reference/javascript/auth-signup#:~:text=Response-,Listen%20to%20auth%20events,-onAuthStateChange(callback)
-    */
-    // Create the listener variable deconstructed from onAuthStateChange. If session exists, user is authenticated
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(Boolean(session))
-      setIsLoading(false)
+  useEffect(() => {
+    let active = true
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active) void loadMerchant(data.session?.access_token).catch(() => {})
     })
 
-
-    // In useEffect, we can return a function. Unsubscribes from auth listener when component unmounts / before effect reruns. 
+    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "INITIAL_SESSION") return
+      if (event === "SIGNED_OUT") {
+        void loadMerchant(undefined)
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+        void loadMerchant(session?.access_token).catch(() => {})
+      }
+    })
     return () => {
+      active = false
+      requestId.current += 1
       listener.subscription.unsubscribe()
     }
-    
-    
-  }, [])
-
+  }, [loadMerchant])
 
   async function logout() {
     await supabase.auth.signOut()
-    setIsAuthenticated(false)
+    void loadMerchant(undefined)
   }
 
   return (
-    // All components inside this provider can access these values
-    <AuthContext.Provider value={{ isAuthenticated, logout, isLoading }}>
-      {/* children is just whatever components are wrapped inside the provider. */}
+    <AuthContext.Provider value={{
+      merchant,
+      isAuthenticated: merchant !== null,
+      isLoading,
+      refreshMerchant,
+      logout,
+    }}>
       {children}
     </AuthContext.Provider>
-  );
+  )
 }
