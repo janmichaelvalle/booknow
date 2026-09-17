@@ -96,7 +96,7 @@ export function QuotationDetailsCard({
                   <div>
                     <p className="font-semibold">{quotedPackage.packageName}</p>
                     <p className="text-sm text-muted-foreground">
-                      {quotedPackage.tierValue} {quotedPackage.tierUnit}
+                      {quotedPackage.tierName}
                     </p>
                   </div>
                   <span className="whitespace-nowrap font-medium">

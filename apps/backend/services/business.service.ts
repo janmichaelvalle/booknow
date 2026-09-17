@@ -34,7 +34,7 @@ export async function getBusinessBySlugOrError(slug: string): Promise<BusinessRe
 export async function getAllOfferings(businessId: string) {
   const packagesResult = await supabase
     .from("business_packages")
-    .select("id, name, badge_text, description, tier_unit")
+    .select("id, name, badge_text, description")
     .eq("business_id", businessId)
     .eq("is_active", true)
 
@@ -80,10 +80,10 @@ export async function getAllOfferings(businessId: string) {
   // Gets all tiers of packages
   const packageTiersResult = await supabase
     .from("business_package_tiers")
-    .select("id, package_id, tier_value, pricing_type, price")
+    .select("id, package_id, name, price, sort_order")
     .in("package_id", packageIds)
     .eq("is_active", true)
-    .order("tier_value", { ascending: true })
+    .order("sort_order", { ascending: true })
 
   if (packageTiersResult.error) {
     return {

@@ -8,7 +8,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { calculateTierTotal } from "@/lib/quotation-calculation"
 import type {
   BusinessPackage,
   CalculatedPackage,
@@ -78,7 +77,7 @@ export function PackageDetails({
       {packages.map((pkg) => {
         const tiersForPackage = packageTiers
           .filter((tier) => tier.package_id === pkg.id)
-          .sort((a, b) => a.tier_value - b.tier_value)
+          .sort((a, b) => a.sort_order - b.sort_order)
         const selection = selections[pkg.id]
         const selectedTier = tiersForPackage.find(
           (tier) => tier.id === selection?.tierId
@@ -152,16 +151,16 @@ export function PackageDetails({
                   className="!grid w-full grid-cols-2 gap-2"
                 >
                   {tiersForPackage.map((tier) => {
-                    const priceText = `₱${calculateTierTotal(tier).toLocaleString()}`
+                    const priceText = `₱${tier.price.toLocaleString()}`
                     return (
                       <ToggleGroupItem
                         key={tier.id}
                         value={tier.id}
-                        aria-label={`${tier.tier_value} ${pkg.tier_unit}, ${priceText}`}
+                        aria-label={`${tier.name}, ${priceText}`}
                         className="h-auto w-full min-w-0 flex-col items-start justify-start gap-1 border-border bg-background px-3 py-3 text-left transition-colors hover:bg-accent/50 data-[state=on]:border-primary data-[state=on]:bg-primary/15 data-[state=on]:ring-2 data-[state=on]:ring-primary/25"
                       >
                         <span className="font-medium">
-                          {tier.tier_value} {pkg.tier_unit}
+                          {tier.name}
                         </span>
                         <span className="text-xs text-muted-foreground">
                           {priceText}

@@ -1,15 +1,8 @@
 import type {
   CalculatedPackage,
   Offerings,
-  PackageTier,
   QuotationValues,
 } from "@/lib/types"
-
-export function calculateTierTotal(tier: PackageTier) {
-  return tier.pricing_type === "fixed"
-    ? tier.price
-    : tier.price * tier.tier_value
-}
 
 export function calculateQuotationTotals(
   values: QuotationValues,
@@ -29,7 +22,7 @@ export function calculateQuotationTotals(
         return null
       }
 
-      const packageTotal = calculateTierTotal(selectedTier)
+      const packageTotal = selectedTier.price
       const selectedItems = offerings.packageTierItems
         .filter(
           (item) =>

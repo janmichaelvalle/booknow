@@ -146,9 +146,6 @@ create table public.business_packages (
   name text not null,
   badge_text text,
   description text,
-  tier_unit text not null check (
-    nullif(btrim(tier_unit), '') is not null
-  ),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -166,22 +163,21 @@ create index business_packages_business_id_idx
   on public.business_packages (business_id);
 
 insert into public.business_packages (
-  business_id, name, badge_text, description, tier_unit
+  business_id, name, badge_text, description
 )
 select
   business.id,
   seed.name,
   seed.badge_text,
-  seed.description,
-  seed.tier_unit
+  seed.description
 from public.businesses business
 cross join (
   values
     ('Cocktail Package', '2 cocktails per guest',
-      'Perfect for wedding and corporate events.', 'guests'),
+      'Perfect for wedding and corporate events.'),
     ('Shooter Package', '5 shooters per guest',
-      'Best for debuts, birthdays, and college parties.', 'guests')
-) as seed(name, badge_text, description, tier_unit)
+      'Best for debuts, birthdays, and college parties.')
+) as seed(name, badge_text, description)
 where business.slug = 'tipsy-tap';
 
 -- Inclusions shared by every tier of a package.
@@ -238,22 +234,19 @@ join (
   on seed.package_name = package.name
 where business.slug = 'tipsy-tap';
 
--- Fixed-price and per-unit variations belonging to a package.
--- The package's tier_unit defines what tier_value measures.
+-- Merchant-named, fixed-price variations belonging to a package.
 create table public.business_package_tiers (
   id uuid primary key default gen_random_uuid(),
   package_id uuid not null
     references public.business_packages(id) on delete cascade,
-  tier_value numeric(10,2) not null check (tier_value > 0),
-  pricing_type text not null check (
-    pricing_type in ('fixed', 'per_unit')
-  ),
+  name text not null check (nullif(btrim(name), '') is not null),
   price numeric(10,2) not null check (price >= 0),
+  sort_order integer not null default 0 check (sort_order >= 0),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint business_package_tiers_package_value_unique
-    unique (package_id, tier_value),
+  constraint business_package_tiers_package_name_unique
+    unique (package_id, name),
   constraint business_package_tiers_id_package_unique
     unique (id, package_id)
 );
@@ -262,30 +255,30 @@ create trigger business_package_tiers_set_updated_at
 before update on public.business_package_tiers
 for each row execute function public.set_updated_at();
 
-create index business_package_tiers_package_value_idx
-  on public.business_package_tiers (package_id, tier_value);
+create index business_package_tiers_package_sort_idx
+  on public.business_package_tiers (package_id, sort_order);
 
 insert into public.business_package_tiers (
-  package_id, tier_value, pricing_type, price
+  package_id, name, price, sort_order
 )
 select
   package.id,
-  seed.tier_value,
-  seed.pricing_type,
-  seed.price
+  seed.name,
+  seed.price,
+  seed.sort_order
 from public.business_packages package
 join public.businesses business on business.id = package.business_id
 join (
   values
-    ('Cocktail Package', 30, 'fixed', 3500.00),
-    ('Cocktail Package', 50, 'fixed', 4500.00),
-    ('Cocktail Package', 75, 'fixed', 6000.00),
-    ('Cocktail Package', 100, 'fixed', 7500.00),
-    ('Shooter Package', 30, 'fixed', 3500.00),
-    ('Shooter Package', 50, 'fixed', 4500.00),
-    ('Shooter Package', 75, 'fixed', 6000.00),
-    ('Shooter Package', 100, 'fixed', 7500.00)
-) as seed(package_name, tier_value, pricing_type, price)
+    ('Cocktail Package', '30 Guests', 3500.00, 1),
+    ('Cocktail Package', '50 Guests', 4500.00, 2),
+    ('Cocktail Package', '75 Guests', 6000.00, 3),
+    ('Cocktail Package', '100 Guests', 7500.00, 4),
+    ('Shooter Package', '30 Guests', 3500.00, 1),
+    ('Shooter Package', '50 Guests', 4500.00, 2),
+    ('Shooter Package', '75 Guests', 6000.00, 3),
+    ('Shooter Package', '100 Guests', 7500.00, 4)
+) as seed(package_name, name, price, sort_order)
   on seed.package_name = package.name
 where business.slug = 'tipsy-tap';
 
@@ -346,57 +339,57 @@ join public.business_packages package on package.id = tier.package_id
 join public.businesses business on business.id = package.business_id
 join (
   values
-    ('Cocktail Package', 30, 'inclusion', 'Cocktails', 60, 'servings',
+    ('Cocktail Package', '30 Guests', 'inclusion', 'Cocktails', 60, 'servings',
       'Two cocktails per guest.', 0.00, 1),
-    ('Cocktail Package', 50, 'inclusion', 'Cocktails', 100, 'servings',
+    ('Cocktail Package', '50 Guests', 'inclusion', 'Cocktails', 100, 'servings',
       'Two cocktails per guest.', 0.00, 1),
-    ('Cocktail Package', 75, 'inclusion', 'Cocktails', 150, 'servings',
+    ('Cocktail Package', '75 Guests', 'inclusion', 'Cocktails', 150, 'servings',
       'Two cocktails per guest.', 0.00, 1),
-    ('Cocktail Package', 100, 'inclusion', 'Cocktails', 200, 'servings',
+    ('Cocktail Package', '100 Guests', 'inclusion', 'Cocktails', 200, 'servings',
       'Two cocktails per guest.', 0.00, 1),
-    ('Shooter Package', 30, 'inclusion', 'Shooters', 150, 'servings',
+    ('Shooter Package', '30 Guests', 'inclusion', 'Shooters', 150, 'servings',
       'Five shooters per guest.', 0.00, 1),
-    ('Shooter Package', 50, 'inclusion', 'Shooters', 250, 'servings',
+    ('Shooter Package', '50 Guests', 'inclusion', 'Shooters', 250, 'servings',
       'Five shooters per guest.', 0.00, 1),
-    ('Shooter Package', 75, 'inclusion', 'Shooters', 375, 'servings',
+    ('Shooter Package', '75 Guests', 'inclusion', 'Shooters', 375, 'servings',
       'Five shooters per guest.', 0.00, 1),
-    ('Shooter Package', 100, 'inclusion', 'Shooters', 500, 'servings',
+    ('Shooter Package', '100 Guests', 'inclusion', 'Shooters', 500, 'servings',
       'Five shooters per guest.', 0.00, 1),
-    ('Cocktail Package', 30, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Cocktail Package', '30 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Cocktail Package', 50, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Cocktail Package', '50 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Cocktail Package', 75, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Cocktail Package', '75 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Cocktail Package', 100, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Cocktail Package', '100 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Cocktail Package', 30, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Cocktail Package', '30 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Cocktail Package', 50, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Cocktail Package', '50 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Cocktail Package', 75, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Cocktail Package', '75 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Cocktail Package', 100, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Cocktail Package', '100 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Shooter Package', 30, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Shooter Package', '30 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Shooter Package', 50, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Shooter Package', '50 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Shooter Package', 75, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Shooter Package', '75 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Shooter Package', 100, 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Shooter Package', '100 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Shooter Package', 30, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Shooter Package', '30 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Shooter Package', 50, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Shooter Package', '50 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Shooter Package', 75, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Shooter Package', '75 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Shooter Package', 100, 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Shooter Package', '100 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11)
 ) as seed(
   package_name,
-  tier_value,
+  tier_name,
   item_type,
   name,
   quantity,
@@ -406,7 +399,7 @@ join (
   sort_order
 )
   on seed.package_name = package.name
-  and seed.tier_value = tier.tier_value
+  and seed.tier_name = tier.name
 where business.slug = 'tipsy-tap';
 
 -- Quotations.
@@ -503,9 +496,7 @@ create table public.quotation_packages (
   package_id uuid,
   package_tier_id uuid,
   package_name text not null,
-  tier_unit text not null check (nullif(btrim(tier_unit), '') is not null),
-  tier_value numeric(10,2) not null check (tier_value > 0),
-  pricing_type text not null check (pricing_type in ('fixed', 'per_unit')),
+  tier_name text not null check (nullif(btrim(tier_name), '') is not null),
   price numeric(10,2) not null check (price >= 0),
   package_total numeric(10,2) not null check (package_total >= 0),
   selected_items_total numeric(10,2) not null default 0
@@ -744,9 +735,7 @@ declare
   v_tier_id uuid;
   v_tier_item_id uuid;
   v_package_name text;
-  v_tier_unit text;
-  v_tier_value numeric(10,2);
-  v_pricing_type text;
+  v_tier_name text;
   v_price numeric(10,2);
   v_package_total numeric(10,2);
   v_package_items_total numeric(10,2);
@@ -847,15 +836,11 @@ begin
 
     select
       package.name,
-      package.tier_unit,
-      tier.tier_value,
-      tier.pricing_type,
+      tier.name,
       tier.price
     into
       v_package_name,
-      v_tier_unit,
-      v_tier_value,
-      v_pricing_type,
+      v_tier_name,
       v_price
     from public.business_packages package
     join public.business_package_tiers tier
@@ -870,10 +855,7 @@ begin
       raise exception 'Invalid or inactive package/tier selection';
     end if;
 
-    v_package_total := case
-      when v_pricing_type = 'fixed' then v_price
-      else v_price * v_tier_value
-    end;
+    v_package_total := v_price;
     v_package_items_total := 0;
     v_selected_items := coalesce(v_package -> 'selectedItems', '[]'::jsonb);
 
@@ -1012,15 +994,11 @@ begin
 
     select
       package.name,
-      package.tier_unit,
-      tier.tier_value,
-      tier.pricing_type,
+      tier.name,
       tier.price
     into
       v_package_name,
-      v_tier_unit,
-      v_tier_value,
-      v_pricing_type,
+      v_tier_name,
       v_price
     from public.business_packages package
     join public.business_package_tiers tier
@@ -1028,10 +1006,7 @@ begin
     where package.id = v_package_id
       and tier.id = v_tier_id;
 
-    v_package_total := case
-      when v_pricing_type = 'fixed' then v_price
-      else v_price * v_tier_value
-    end;
+    v_package_total := v_price;
     v_package_items_total := 0;
     v_selected_items := coalesce(v_package -> 'selectedItems', '[]'::jsonb);
 
@@ -1052,9 +1027,7 @@ begin
       package_id,
       package_tier_id,
       package_name,
-      tier_unit,
-      tier_value,
-      pricing_type,
+      tier_name,
       price,
       package_total,
       selected_items_total,
@@ -1065,9 +1038,7 @@ begin
       v_package_id,
       v_tier_id,
       v_package_name,
-      v_tier_unit,
-      v_tier_value,
-      v_pricing_type,
+      v_tier_name,
       v_price,
       v_package_total,
       v_package_items_total,

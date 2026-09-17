@@ -42,37 +42,32 @@ insert into public.business_packages (
   business_id,
   name,
   badge_text,
-  description,
-  tier_unit
+  description
 )
 select
   business.id,
   seed.name,
   seed.badge_text,
-  seed.description,
-  seed.tier_unit
+  seed.description
 from public.businesses business
 cross join (
   values
     (
       'Premium Coffee Cart',
       'Coffee cart service',
-      'Premium hot or iced coffee for weddings, parties, and celebrations.',
-      'cups'
+      'Premium hot or iced coffee for weddings, parties, and celebrations.'
     ),
     (
       'Croffles or Tiramisu Package',
       'Dessert package',
-      'Choose croffles or tiramisu with two flavors for your event.',
-      'servings'
+      'Choose croffles or tiramisu with two flavors for your event.'
     ),
     (
       'Photobooth Package',
       'Unlimited photo sessions',
-      'Unlimited photobooth sessions with customized layouts and printed photos.',
-      'hours'
+      'Unlimited photobooth sessions with customized layouts and printed photos.'
     )
-) as seed(name, badge_text, description, tier_unit)
+) as seed(name, badge_text, description)
 where business.slug = 'the-brew-cart';
 
 -- Details included with every tier of the corresponding package.
@@ -166,28 +161,28 @@ where business.slug = 'the-brew-cart';
 -- Fixed-price merchant-defined tiers.
 insert into public.business_package_tiers (
   package_id,
-  tier_value,
-  pricing_type,
-  price
+  name,
+  price,
+  sort_order
 )
 select
   package.id,
-  seed.tier_value,
-  'fixed',
-  seed.price
+  seed.name,
+  seed.price,
+  seed.sort_order
 from public.business_packages package
 join public.businesses business on business.id = package.business_id
 join (
   values
-    ('Premium Coffee Cart', 50::numeric, 9500.00::numeric),
-    ('Premium Coffee Cart', 100::numeric, 18500.00::numeric),
-    ('Premium Coffee Cart', 150::numeric, 28000.00::numeric),
-    ('Croffles or Tiramisu Package', 50::numeric, 11500.00::numeric),
-    ('Croffles or Tiramisu Package', 100::numeric, 22000.00::numeric),
-    ('Croffles or Tiramisu Package', 180::numeric, 36000.00::numeric),
-    ('Photobooth Package', 2::numeric, 3800.00::numeric),
-    ('Photobooth Package', 3::numeric, 4500.00::numeric)
-) as seed(package_name, tier_value, price)
+    ('Premium Coffee Cart', '50 Cups', 9500.00::numeric, 1),
+    ('Premium Coffee Cart', '100 Cups', 18500.00::numeric, 2),
+    ('Premium Coffee Cart', '150 Cups', 28000.00::numeric, 3),
+    ('Croffles or Tiramisu Package', '50 Servings', 11500.00::numeric, 1),
+    ('Croffles or Tiramisu Package', '100 Servings', 22000.00::numeric, 2),
+    ('Croffles or Tiramisu Package', '180 Servings', 36000.00::numeric, 3),
+    ('Photobooth Package', '2 Hours', 3800.00::numeric, 1),
+    ('Photobooth Package', '3 Hours', 4500.00::numeric, 2)
+) as seed(package_name, name, price, sort_order)
   on seed.package_name = package.name
 where business.slug = 'the-brew-cart';
 
@@ -217,49 +212,49 @@ join public.businesses business on business.id = package.business_id
 join (
   values
     -- Premium Coffee Cart tiers.
-    ('Premium Coffee Cart', 50::numeric, 'inclusion', 'Coffee Cups', 50, 'cups',
+    ('Premium Coffee Cart', '50 Cups', 'inclusion', 'Coffee Cups', 50, 'cups',
       'Fifty cups of premium coffee.', 0.00::numeric, 1),
-    ('Premium Coffee Cart', 50::numeric, 'inclusion', 'Service Duration', 2, 'hours',
+    ('Premium Coffee Cart', '50 Cups', 'inclusion', 'Service Duration', 2, 'hours',
       'Two hours of coffee cart service.', 0.00::numeric, 2),
-    ('Premium Coffee Cart', 100::numeric, 'inclusion', 'Coffee Cups', 100, 'cups',
+    ('Premium Coffee Cart', '100 Cups', 'inclusion', 'Coffee Cups', 100, 'cups',
       'One hundred cups of premium coffee.', 0.00::numeric, 1),
-    ('Premium Coffee Cart', 100::numeric, 'inclusion', 'Service Duration', 4, 'hours',
+    ('Premium Coffee Cart', '100 Cups', 'inclusion', 'Service Duration', 4, 'hours',
       'Four hours of coffee cart service.', 0.00::numeric, 2),
-    ('Premium Coffee Cart', 150::numeric, 'inclusion', 'Coffee Cups', 150, 'cups',
+    ('Premium Coffee Cart', '150 Cups', 'inclusion', 'Coffee Cups', 150, 'cups',
       'One hundred fifty cups of premium coffee.', 0.00::numeric, 1),
-    ('Premium Coffee Cart', 150::numeric, 'inclusion', 'Service Duration', 5, 'hours',
+    ('Premium Coffee Cart', '150 Cups', 'inclusion', 'Service Duration', 5, 'hours',
       'Five hours of coffee cart service.', 0.00::numeric, 2),
 
     -- Croffles or Tiramisu tiers.
-    ('Croffles or Tiramisu Package', 50::numeric, 'inclusion', 'Croffles or Tiramisu', 50, 'servings',
+    ('Croffles or Tiramisu Package', '50 Servings', 'inclusion', 'Croffles or Tiramisu', 50, 'servings',
       'Fifty servings of the selected dessert.', 0.00::numeric, 1),
-    ('Croffles or Tiramisu Package', 100::numeric, 'inclusion', 'Croffles or Tiramisu', 100, 'servings',
+    ('Croffles or Tiramisu Package', '100 Servings', 'inclusion', 'Croffles or Tiramisu', 100, 'servings',
       'One hundred servings of the selected dessert.', 0.00::numeric, 1),
-    ('Croffles or Tiramisu Package', 180::numeric, 'inclusion', 'Croffles or Tiramisu', 180, 'servings',
+    ('Croffles or Tiramisu Package', '180 Servings', 'inclusion', 'Croffles or Tiramisu', 180, 'servings',
       'One hundred eighty servings of the selected dessert.', 0.00::numeric, 1),
 
-    -- Photobooth tiers are measured by service hours.
-    ('Photobooth Package', 2::numeric, 'inclusion', 'Unlimited Photo Sessions', 1, 'service',
+    -- Photobooth tier names describe the service duration.
+    ('Photobooth Package', '2 Hours', 'inclusion', 'Unlimited Photo Sessions', 1, 'service',
       'Unlimited photobooth sessions during the two-hour service.', 0.00::numeric, 1),
-    ('Photobooth Package', 2::numeric, 'inclusion', 'Photo Templates', 2, 'templates',
+    ('Photobooth Package', '2 Hours', 'inclusion', 'Photo Templates', 2, 'templates',
       'Choose two photo templates.', 0.00::numeric, 2),
-    ('Photobooth Package', 3::numeric, 'inclusion', 'Unlimited Photo Sessions', 1, 'service',
+    ('Photobooth Package', '3 Hours', 'inclusion', 'Unlimited Photo Sessions', 1, 'service',
       'Unlimited photobooth sessions during the three-hour service.', 0.00::numeric, 1),
-    ('Photobooth Package', 3::numeric, 'inclusion', 'Photo Templates', 3, 'templates',
+    ('Photobooth Package', '3 Hours', 'inclusion', 'Photo Templates', 3, 'templates',
       'Choose three photo templates.', 0.00::numeric, 2),
 
     -- Photobooth paid upgrades and extras.
-    ('Photobooth Package', 2::numeric, 'upgrade', 'Magnetic Photos', 1, 'upgrade',
+    ('Photobooth Package', '2 Hours', 'upgrade', 'Magnetic Photos', 1, 'upgrade',
       'Upgrade the package prints to magnetic photos.', 500.00::numeric, 10),
-    ('Photobooth Package', 2::numeric, 'extra', 'One-Hour Extension', 1, 'hour',
+    ('Photobooth Package', '2 Hours', 'extra', 'One-Hour Extension', 1, 'hour',
       'Add one hour to the photobooth service.', 1000.00::numeric, 11),
-    ('Photobooth Package', 3::numeric, 'upgrade', 'Magnetic Photos', 1, 'upgrade',
+    ('Photobooth Package', '3 Hours', 'upgrade', 'Magnetic Photos', 1, 'upgrade',
       'Upgrade the package prints to magnetic photos.', 800.00::numeric, 10),
-    ('Photobooth Package', 3::numeric, 'extra', 'One-Hour Extension', 1, 'hour',
+    ('Photobooth Package', '3 Hours', 'extra', 'One-Hour Extension', 1, 'hour',
       'Add one hour to the photobooth service.', 1500.00::numeric, 11)
 ) as seed(
   package_name,
-  tier_value,
+  tier_name,
   item_type,
   name,
   quantity,
@@ -269,7 +264,7 @@ join (
   sort_order
 )
   on seed.package_name = package.name
-  and seed.tier_value = tier.tier_value
+  and seed.tier_name = tier.name
 where business.slug = 'the-brew-cart';
 
 -- Development coverage rules. Metro Manila is covered, with a PHP 500

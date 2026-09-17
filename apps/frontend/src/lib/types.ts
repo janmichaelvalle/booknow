@@ -1,4 +1,3 @@
-export type PricingType = "fixed" | "per_unit"
 export type TierItemType = "inclusion" | "extra" | "upgrade" | "freebie"
 export type QuotationStatus = "open" | "accepted" | "booked" | "closed"
 export type CloseReason =
@@ -64,7 +63,6 @@ export type BusinessPackage = {
   name: string
   badge_text: string | null
   description: string | null
-  tier_unit: string
 }
 
 export type PackageInclusion = {
@@ -80,9 +78,9 @@ export type PackageInclusion = {
 export type PackageTier = {
   id: string
   package_id: string
-  tier_value: number
-  pricing_type: PricingType
+  name: string
   price: number
+  sort_order: number
 }
 
 export type PackageTierItem = {
@@ -151,9 +149,7 @@ export type QuotationPackage = {
   packageId: string | null
   tierId: string | null
   packageName: string
-  tierUnit: string
-  tierValue: number
-  pricingType: PricingType
+  tierName: string
   price: number
   packageTotal: number
   selectedItemsTotal: number

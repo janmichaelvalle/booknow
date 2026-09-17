@@ -1,7 +1,6 @@
 import { supabase } from "../lib/supabase.js"
 import type {
   CloseReason,
-  PricingType,
   Quotation,
   QuotationFormBody,
   QuotationStatus,
@@ -42,9 +41,7 @@ type PackageRow = {
   package_id: string | null
   package_tier_id: string | null
   package_name: string
-  tier_unit: string
-  tier_value: number | string
-  pricing_type: PricingType
+  tier_name: string
   price: number | string
   package_total: number | string
   selected_items_total: number | string
@@ -112,9 +109,7 @@ const QUOTATION_SELECT = `
     package_id,
     package_tier_id,
     package_name,
-    tier_unit,
-    tier_value,
-    pricing_type,
+    tier_name,
     price,
     package_total,
     selected_items_total,
@@ -155,9 +150,7 @@ function mapQuotation(row: QuotationRow): Quotation {
       packageId: quotedPackage.package_id,
       tierId: quotedPackage.package_tier_id,
       packageName: quotedPackage.package_name,
-      tierUnit: quotedPackage.tier_unit,
-      tierValue: numberValue(quotedPackage.tier_value),
-      pricingType: quotedPackage.pricing_type,
+      tierName: quotedPackage.tier_name,
       price: numberValue(quotedPackage.price),
       packageTotal: numberValue(quotedPackage.package_total),
       selectedItemsTotal: numberValue(quotedPackage.selected_items_total),

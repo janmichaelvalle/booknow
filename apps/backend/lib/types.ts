@@ -54,7 +54,6 @@ export type PaymentMethod = {
   isActive: boolean
 }
 
-export type PricingType = "fixed" | "per_unit"
 export type TierItemType = "inclusion" | "extra" | "upgrade" | "freebie"
 export type QuotationStatus = "open" | "accepted" | "booked" | "closed"
 export type CloseReason =
@@ -119,9 +118,7 @@ export type QuotationPackage = {
   packageId: string | null
   tierId: string | null
   packageName: string
-  tierUnit: string
-  tierValue: number
-  pricingType: PricingType
+  tierName: string
   price: number
   packageTotal: number
   selectedItemsTotal: number
