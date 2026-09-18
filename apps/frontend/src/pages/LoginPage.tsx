@@ -20,7 +20,7 @@ export function LoginPage() {
     try {
       const merchant = await refreshMerchant()
       if (!merchant) throw new Error("No business is linked to this account")
-      navigate(`/${merchant.businessSlug}/quotations`, { replace: true })
+      navigate("/quotations", { replace: true })
     } catch {
       setErrorMessage("Your account could not be linked to a business. Contact support.")
     }

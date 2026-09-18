@@ -5,18 +5,15 @@ import paymentMethodRoutes from '../routes/payment-method.routes.js'
 import businessRoutes from '../routes/business.routes.js' 
 import merchantRoutes from '../routes/merchant.routes.js'
 import { businessMiddleware } from "../middlewares/business.middleware.js";
+import { parseCorsOrigins } from "../middlewares/cors-origins.js";
 
 
 const app = new Hono()
 
 
-const corsOrigin = process.env.CORS_ORIGIN
-
-if (!corsOrigin) {
-  throw new Error('CORS_ORIGIN must be defined')
-}
-
-app.use('*', cors({ origin: corsOrigin }))
+// CORS_ORIGIN remains a one-origin fallback for existing local setups.
+const allowedOrigins = parseCorsOrigins(process.env.CORS_ORIGINS ?? process.env.CORS_ORIGIN)
+app.use('*', cors({ origin: (origin) => allowedOrigins.has(origin) ? origin : "" }))
 // Example flow for middleware:
 // 1. do the logic + some validations
 // 2. assuming there's no error, attach the returned value to context (Override Context global types)

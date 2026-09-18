@@ -2,15 +2,16 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import useAuth from "@/context/useAuth"
 import { merchantFetch } from "@/lib/merchant-api"
+import { publicQuotationUrl } from "@/lib/app-host"
 import type { Quotation } from "@/lib/types"
 import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
-import { Link, useNavigate, useParams } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 export function QuotationsListPage() {
   const navigate = useNavigate()
-  const { businessSlug } = useParams()
   const { logout, merchant } = useAuth()
+  const businessSlug = merchant?.businessSlug
 
   const { data: quotations = [], isPending, error } = useQuery({
     queryKey: ["quotations", businessSlug],
@@ -19,7 +20,7 @@ export function QuotationsListPage() {
       if (!response.ok) throw new Error("Failed to fetch quotations")
       return (await response.json()).data ?? []
     },
-    enabled: !!businessSlug && merchant?.businessSlug === businessSlug,
+    enabled: !!businessSlug,
   })
 
   if (!businessSlug) return <p>Missing business slug.</p>
@@ -33,11 +34,11 @@ export function QuotationsListPage() {
       {quotations.map((quotation) => (
         <Card key={quotation.id}>
           <CardHeader>
-            <Link to={`/${businessSlug}/${quotation.quotationReference}`}>
+            <a href={publicQuotationUrl(businessSlug, quotation.quotationReference, window.location.hostname, window.location.origin)}>
               <CardTitle className="text-base">
                 Quotation #{quotation.quotationReference}
               </CardTitle>
-            </Link>
+            </a>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
             <Row label="Status" value={quotation.quotationStatus} capitalize />
