@@ -7,6 +7,10 @@ import { LoginPage } from "@/pages/LoginPage"
 import { QuotationDetailsPage } from "@/pages/QuotationDetailsPage"
 import { QuotationPage } from "@/pages/QuotationPage"
 import { QuotationsListPage } from "@/pages/QuotationsListPage"
+import { MerchantAppShell } from "@/components/merchant/MerchantAppShell"
+import { MerchantQuotationDetailsPage } from "@/pages/MerchantQuotationDetailsPage"
+import { MerchantSectionPage } from "@/pages/MerchantSectionPage"
+import { MerchantAvailabilityPage } from "@/pages/MerchantAvailabilityPage"
 
 export default function App({ surface }: { surface: AppSurface }) {
   return (
@@ -15,7 +19,19 @@ export default function App({ surface }: { surface: AppSurface }) {
         {surface.kind === "public" ? <PublicRoutes /> :
           surface.kind === "admin" ? <AdminRoutes /> :
           <p className="p-4">This hostname is not configured for QuotationMonkey.</p>}
-        <Toaster />
+        <Toaster
+          position={surface.kind === "admin" ? "top-center" : undefined}
+          offset={surface.kind === "admin"
+            ? { top: "calc(env(safe-area-inset-top, 0px) + 16px)" }
+            : undefined}
+          mobileOffset={surface.kind === "admin"
+            ? {
+                top: "calc(env(safe-area-inset-top, 0px) + 16px)",
+                left: 16,
+                right: 16,
+              }
+            : undefined}
+        />
       </main>
     </div>
   )
@@ -40,7 +56,13 @@ function AdminRoutes() {
       <Route path="/" element={<Navigate to="/quotations" replace />} />
       <Route path="/login" element={<AdminLogin />} />
       <Route element={<RequireMerchant />}>
-        <Route path="/quotations" element={<QuotationsListPage />} />
+        <Route element={<MerchantAppShell />}>
+          <Route path="/quotations" element={<QuotationsListPage />} />
+          <Route path="/quotations/:quotationReference" element={<MerchantQuotationDetailsPage />} />
+          <Route path="/packages" element={<MerchantSectionPage section="Packages" />} />
+          <Route path="/availability" element={<MerchantAvailabilityPage />} />
+          <Route path="/settings" element={<MerchantSectionPage section="Settings" />} />
+        </Route>
       </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>

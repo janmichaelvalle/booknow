@@ -26,6 +26,15 @@ export async function getQuotationController(c: Context) {
   )
 }
 
+export async function getMerchantQuotationController(c: Context) {
+  const merchant = c.get("merchant")
+  const reference = c.req.param("quotationReference")!
+  return handleServiceResponse(
+    c,
+    await getQuotationByReference(merchant.businessId, reference)
+  )
+}
+
 export async function createQuotationController(c: Context) {
   const business = c.get("business")
   const body = await c.req.json<QuotationFormBody>()

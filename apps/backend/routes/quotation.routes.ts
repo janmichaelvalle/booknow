@@ -7,6 +7,7 @@ import {
   createQuotationController,
   getAllQuotationsController,
   getQuotationController,
+  getMerchantQuotationController,
   updateQuotationController,
   updateQuotationStatusController,
 } from "../controllers/quotation.controller.js"
@@ -22,6 +23,11 @@ app.get(
 app.get(
   "/api/businesses/:businessSlug/quotations/:quotationReference",
   getQuotationController
+)
+app.get(
+  "/api/merchant/quotations/:quotationReference",
+  merchantAuthMiddleware,
+  getMerchantQuotationController
 )
 app.post("/api/businesses/:businessSlug/quotations", createQuotationController)
 app.put(
