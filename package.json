@@ -4,7 +4,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev:backend": "vercel dev",
+    "dev:backend": "npm run dev --workspace apps/backend",
     "dev:frontend": "npm run dev --workspace apps/frontend",
     "dev:all": "powershell -NoProfile -Command \"Start-Process powershell -ArgumentList '-NoProfile','-Command','Set-Location ''C:\\dev\\booknow''; npm run dev:backend'; npm run dev:frontend\""
   },

@@ -3,6 +3,7 @@ import { EventDetails } from "@/components/quotation/EventDetails"
 import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { Button } from "@/components/ui/button"
 import { calculateQuotationTotals } from "@/lib/quotation-calculation"
+import { fromDateOnly, toDateOnly } from "@/lib/date-only"
 import type {
   CoverageResult,
   Offerings,
@@ -112,7 +113,7 @@ function EditQuotationForm({
 
   const isKnownOccasion = knownOccasions.has(quotation.occasion)
   const defaultValues: QuotationValues = {
-    eventDate: new Date(quotation.eventDate),
+    eventDate: fromDateOnly(quotation.eventDate),
     startTime: quotation.startTime,
     endTime: quotation.endTime,
     venue: quotation.venue,
@@ -149,7 +150,7 @@ function EditQuotationForm({
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            eventDate: value.eventDate.toISOString(),
+            eventDate: toDateOnly(value.eventDate),
             startTime: value.startTime,
             endTime: value.endTime,
             venue: value.venue,
@@ -194,6 +195,8 @@ function EditQuotationForm({
     >
       <EventDetails
         form={form}
+        businessSlug={businessSlug}
+        originalEventDate={quotation.eventDate}
         venueCoverage={venueCoverage}
         onVenueCoverageChange={setVenueCoverage}
       />

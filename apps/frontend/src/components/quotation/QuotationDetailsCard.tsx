@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { Quotation } from "@/lib/types"
 import { format } from "date-fns"
+import { fromDateOnly } from "@/lib/date-only"
 import {
   Calendar,
   Clock3,
@@ -22,7 +23,7 @@ export function QuotationDetailsCard({
   onEdit,
   canEdit,
 }: QuotationDetailsCardProps) {
-  const formattedDate = format(new Date(quotation.eventDate), "EEEE, MMMM d, yyyy")
+  const formattedDate = format(fromDateOnly(quotation.eventDate), "EEEE, MMMM d, yyyy")
   const formattedCreatedAt = format(new Date(quotation.createdAt), "MMMM d, yyyy")
   const formattedStartTime = format(
     new Date(`2000-01-01T${quotation.startTime}`),

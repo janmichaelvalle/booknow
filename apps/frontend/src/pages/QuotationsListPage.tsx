@@ -6,6 +6,7 @@ import { publicQuotationUrl } from "@/lib/app-host"
 import type { Quotation } from "@/lib/types"
 import { useQuery } from "@tanstack/react-query"
 import { format } from "date-fns"
+import { fromDateOnly } from "@/lib/date-only"
 import { useNavigate } from "react-router-dom"
 
 export function QuotationsListPage() {
@@ -44,7 +45,7 @@ export function QuotationsListPage() {
             <Row label="Status" value={quotation.quotationStatus} capitalize />
             <Row
               label="Event Date"
-              value={format(new Date(quotation.eventDate), "MMMM d, yyyy")}
+              value={format(fromDateOnly(quotation.eventDate), "MMMM d, yyyy")}
             />
             <Row label="Venue" value={quotation.venue} />
             <Row

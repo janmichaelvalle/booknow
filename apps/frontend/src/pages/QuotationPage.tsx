@@ -4,6 +4,7 @@ import { EventDetails } from "@/components/quotation/EventDetails"
 import { PackageDetails } from "@/components/quotation/PackageDetails"
 import { StickyOrderSummary } from "@/components/quotation/StickyOrderSummary"
 import { calculateQuotationTotals } from "@/lib/quotation-calculation"
+import { toDateOnly } from "@/lib/date-only"
 import type {
   BusinessInformation,
   CoverageResult,
@@ -140,7 +141,7 @@ export function QuotationPage() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            eventDate: value.eventDate.toISOString(),
+            eventDate: toDateOnly(value.eventDate),
             startTime: value.startTime,
             endTime: value.endTime,
             venue: value.venue,
@@ -252,6 +253,7 @@ export function QuotationPage() {
 
       <EventDetails
         form={form}
+        businessSlug={businessSlug ?? ""}
         venueCoverage={venueCoverage}
         onVenueCoverageChange={setVenueCoverage}
       />

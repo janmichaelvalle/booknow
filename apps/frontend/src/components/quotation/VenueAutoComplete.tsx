@@ -183,7 +183,7 @@ console.log("Complete result:", venueResult)
     }
   }, [])
 
-  return <div ref={containerRef} className="w-full" />
+  return <div ref={containerRef} className="venue-place-autocomplete w-full" />
 }
 
 /*

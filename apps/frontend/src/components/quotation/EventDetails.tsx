@@ -29,12 +29,16 @@ const items = [
 ]
 
 import { Input } from "@/components/ui/input"
-import { format } from "date-fns"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Calendar, CalendarDayButton } from "@/components/ui/calendar"
+import { Popover, PopoverAnchor, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { CalendarDays, MapPin, Users, CalendarClock } from "lucide-react"
+import { addMonths, endOfMonth, format, startOfMonth, subMonths } from "date-fns"
+import { useQuery } from "@tanstack/react-query"
+import { createContext, useContext, useState } from "react"
+import { fromDateOnly, toDateOnly, todayInManila } from "@/lib/date-only"
+import { labelDayButton } from "react-day-picker"
 
 import {
   VenueAutocomplete,
@@ -43,13 +47,77 @@ import type { CoverageResult } from "@/lib/types"
 
 type EventDetailsProps = {
   form: any
+  businessSlug: string
+  originalEventDate?: string
   venueCoverage: CoverageResult | null
   onVenueCoverageChange: (coverage: CoverageResult) => void
 }
 
+type UnavailableDatePopoverState = {
+  openDate: string | null
+  setOpenDate: (date: string | null) => void
+}
 
-export function EventDetails({ form, venueCoverage,
+const UnavailableDatePopoverContext = createContext<UnavailableDatePopoverState | null>(null)
+
+function CalendarDayWithUnavailablePopover(
+  props: React.ComponentProps<typeof CalendarDayButton>
+) {
+  const popover = useContext(UnavailableDatePopoverContext)
+
+  if (!props.modifiers.unavailable || !popover) {
+    return <CalendarDayButton {...props} />
+  }
+
+  const day = toDateOnly(props.day.date)
+
+  return (
+    <Popover
+      open={popover.openDate === day}
+      onOpenChange={(open) => {
+        if (!open && popover.openDate === day) popover.setOpenDate(null)
+      }}
+    >
+      <PopoverAnchor asChild>
+        <div className="size-full">
+          <CalendarDayButton {...props} aria-disabled="true" />
+        </div>
+      </PopoverAnchor>
+      <PopoverContent
+        side="bottom"
+        sideOffset={6}
+        className="w-48 p-3 text-sm"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+      >
+        <p className="font-medium">Date unavailable</p>
+        <p className="text-muted-foreground">Please choose another date.</p>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+
+export function EventDetails({ form, businessSlug, originalEventDate, venueCoverage,
   onVenueCoverageChange, }: EventDetailsProps) {
+  const [calendarMonth, setCalendarMonth] = useState(
+    fromDateOnly(originalEventDate ?? todayInManila())
+  )
+  const [explainedUnavailableDate, setExplainedUnavailableDate] = useState<string | null>(null)
+  const from = toDateOnly(startOfMonth(subMonths(calendarMonth, 1)))
+  const to = toDateOnly(endOfMonth(addMonths(calendarMonth, 1)))
+  const { data: availability, isPending: availabilityPending, isError: availabilityError } = useQuery({
+    queryKey: ["availability", businessSlug, from, to],
+    queryFn: async (): Promise<{ unavailableDates: string[] }> => {
+      const query = new URLSearchParams({ from, to })
+      const response = await fetch(
+        `${import.meta.env.VITE_BASE_URL}/api/businesses/${businessSlug}/availability?${query}`
+      )
+      if (!response.ok) throw new Error("Failed to fetch availability")
+      return (await response.json()).data
+    },
+    enabled: !!businessSlug,
+  })
+  const unavailableDates = new Set(availability?.unavailableDates ?? [])
 
 
 
@@ -74,7 +142,7 @@ export function EventDetails({ form, venueCoverage,
             </FieldLabel>
 
             <p className="text-sm text-muted-foreground">
-              Choose your preferred event date and available time slot.
+              Choose your preferred event date and time.
             </p>
 
             <form.Field name="eventDate">
@@ -84,7 +152,9 @@ export function EventDetails({ form, venueCoverage,
 
                 return (
                   <Field data-invalid={!field.state.meta.isValid && shouldShowError}>
-                    <Popover>
+                    <Popover onOpenChange={(open) => {
+                      if (!open) setExplainedUnavailableDate(null)
+                    }}>
                       <PopoverTrigger asChild>
                         <Button
                           type="button"
@@ -100,18 +170,80 @@ export function EventDetails({ form, venueCoverage,
                       </PopoverTrigger>
 
                       <PopoverContent className="w-auto p-0" align="start">
+                        <UnavailableDatePopoverContext.Provider
+                          value={{
+                            openDate: explainedUnavailableDate,
+                            setOpenDate: setExplainedUnavailableDate,
+                          }}
+                        >
                         <Calendar
                           mode="single"
+                          month={calendarMonth}
+                          onMonthChange={(month) => {
+                            setCalendarMonth(month)
+                            setExplainedUnavailableDate(null)
+                          }}
                           selected={field.state.value}
-                          disabled={[{ before: new Date() }]}
+                          modifiers={{
+                            unavailable: (date) => {
+                              const day = toDateOnly(date)
+                              return day >= todayInManila() &&
+                                day !== originalEventDate &&
+                                !availabilityPending &&
+                                !availabilityError &&
+                                unavailableDates.has(day)
+                            },
+                          }}
+                          modifiersClassNames={{
+                            unavailable: "[&_button]:border [&_button]:border-rose-200 [&_button]:bg-rose-50 [&_button]:text-rose-700 [&_button:hover]:bg-rose-100 [&_button:hover]:text-rose-800 dark:[&_button]:border-rose-900 dark:[&_button]:bg-rose-950/40 dark:[&_button]:text-rose-300",
+                          }}
+                          labels={{
+                            labelDayButton: (date, modifiers) =>
+                              modifiers.unavailable
+                                ? `${format(date, "EEEE, MMMM d, yyyy")}, unavailable`
+                                : labelDayButton(date, modifiers),
+                          }}
+                          components={{
+                            DayButton: CalendarDayWithUnavailablePopover,
+                          }}
+                          disabled={(date) => {
+                            const day = toDateOnly(date)
+                            const unchangedDate = day === originalEventDate
+                            return day < todayInManila() ||
+                              (!unchangedDate && (
+                                availabilityPending || availabilityError
+                              ))
+                          }}
                           onSelect={(newDate) => {
                             if (newDate) {
+                              const day = toDateOnly(newDate)
+                              if (day !== originalEventDate && unavailableDates.has(day)) return
+                              setExplainedUnavailableDate(null)
                               field.handleChange(newDate)
                             }
                           }}
+                          onDayClick={(date, modifiers) => {
+                            if (modifiers.unavailable) setExplainedUnavailableDate(toDateOnly(date))
+                          }}
                         />
+                        </UnavailableDatePopoverContext.Provider>
+                        <span className="sr-only" role="status" aria-live="polite" aria-atomic="true">
+                          {explainedUnavailableDate && unavailableDates.has(explainedUnavailableDate)
+                            ? `${format(fromDateOnly(explainedUnavailableDate), "MMMM d")}, unavailable. Please choose another date.`
+                            : ""}
+                        </span>
+                        {availabilityPending && <p className="px-3 pb-2 text-xs text-muted-foreground">Checking availability...</p>}
+                        {availabilityError && <p className="px-3 pb-2 text-xs text-destructive">Availability could not be loaded. Try again.</p>}
                       </PopoverContent>
                     </Popover>
+
+                    {field.state.value && unavailableDates.has(toDateOnly(field.state.value)) && (
+                      <FieldDescription>
+                        {toDateOnly(field.state.value) === originalEventDate
+                          ? "This date is now unavailable for new quotations, but you can keep it on this quotation."
+                          : "This date is no longer available. Please choose another date."}
+                      </FieldDescription>
+                    )}
 
                     {shouldShowError && field.state.meta.errors.length > 0 && (
                       <FieldError errors={field.state.meta.errors} />

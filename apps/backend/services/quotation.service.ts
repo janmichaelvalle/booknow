@@ -313,6 +313,16 @@ async function saveQuotation(
   }
 
   if (saveError || !savedReference) {
+    if (saveError?.message?.includes("EVENT_DATE_UNAVAILABLE")) {
+      return { error: { message: "This event date is no longer available", status: 409 } }
+    }
+    if (saveError?.message?.includes("Only open quotations can be edited")) {
+      return { error: { message: "Only open quotations can be edited", status: 409 } }
+    }
+    if (saveError?.message?.includes("Event date must be YYYY-MM-DD") ||
+        saveError?.message?.includes("Event date cannot be in the past")) {
+      return { error: { message: saveError.message, status: 400 } }
+    }
     return {
       error: {
         message: quotationId
@@ -352,21 +362,30 @@ export async function updateQuotationStatus(
   quotationReference: string,
   body: UpdateQuotationStatusBody
 ): Promise<ServiceResponse<Quotation>> {
-  const payload = {
-    quotation_status: body.quotationStatus,
-    close_reason:
-      body.quotationStatus === "closed" ? body.closeReason ?? null : null,
-    close_reason_notes:
-      body.quotationStatus === "closed" ? body.closeReasonNotes ?? null : null,
+  if (body.quotationStatus === "closed" && !body.closeReason) {
+    return { error: { message: "A close reason is required", status: 400 } }
   }
-
-  const { error } = await supabase
-    .from("quotations")
-    .update(payload)
-    .eq("business_id", businessId)
-    .eq("quotation_reference", quotationReference.toUpperCase())
+  if (body.quotationStatus === "closed" && body.closeReason === "other" && !body.closeReasonNotes?.trim()) {
+    return { error: { message: "Close reason notes are required for Other", status: 400 } }
+  }
+  const { error } = await supabase.rpc("set_quotation_status", {
+    p_business_id: businessId,
+    p_quotation_reference: quotationReference,
+    p_status: body.quotationStatus,
+    p_close_reason: body.quotationStatus === "closed" ? body.closeReason ?? null : null,
+    p_close_reason_notes: body.quotationStatus === "closed" ? body.closeReasonNotes ?? null : null,
+  })
 
   if (error) {
+    if (error.message.includes("EVENT_DATE_UNAVAILABLE")) {
+      return { error: { message: "This event date is no longer available", status: 409 } }
+    }
+    if (error.message.includes("INVALID_STATUS_TRANSITION")) {
+      return { error: { message: "This status change is not allowed", status: 409 } }
+    }
+    if (error.message.includes("Quotation not found")) {
+      return { error: { message: "Quotation not found", status: 404 } }
+    }
     return {
       error: {
         message: "Failed to update quotation status",

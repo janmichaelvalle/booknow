@@ -6,11 +6,12 @@
     "hono": "^4.11.9"
   },
   "devDependencies": {
+    "@hono/node-server": "^2.1.1",
     "@types/node": "^20.11.17",
     "tsx": "^4.7.1",
     "typescript": "^5.8.3"
   },
   "scripts": {
-    "dev": "vc dev --cwd ../../apps/backend"
+    "dev": "tsx watch --env-file=.env.local src/dev.ts"
   }
 }

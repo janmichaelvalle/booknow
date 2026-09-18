@@ -122,6 +122,46 @@
   }
 }
 
+/* Match the Google Places field to the shared form Input without changing its widget. */
+.venue-place-autocomplete gmp-place-autocomplete {
+  box-sizing: border-box;
+  display: block;
+  height: 2.25rem;
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 2px);
+  background: transparent;
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: 1rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 5%);
+  transition: border-color 150ms, box-shadow 150ms;
+}
+
+.venue-place-autocomplete gmp-place-autocomplete::part(input) {
+  color: var(--foreground);
+  font-family: inherit;
+  font-size: inherit;
+}
+
+.venue-place-autocomplete gmp-place-autocomplete::part(input)::placeholder {
+  color: var(--muted-foreground);
+}
+
+.venue-place-autocomplete gmp-place-autocomplete:focus-within {
+  border-color: var(--ring);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 50%, transparent);
+}
+
+@media (min-width: 48rem) {
+  .venue-place-autocomplete gmp-place-autocomplete {
+    font-size: 0.875rem;
+  }
+}
+
+.dark .venue-place-autocomplete gmp-place-autocomplete {
+  background: color-mix(in oklab, var(--input) 30%, transparent);
+}
+
 /* Geoapify venue autocomplete */
 .venue-autocomplete {
   width: 100%;

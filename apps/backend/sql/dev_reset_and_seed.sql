@@ -23,6 +23,7 @@ drop table if exists public.business_package_tier_inclusions;
 drop table if exists public.business_package_inclusions;
 drop table if exists public.business_package_tiers;
 drop table if exists public.business_service_areas;
+drop table if exists public.business_capacity_overrides;
 drop table if exists public.service_areas;
 drop table if exists public.business_package_pricing;
 drop table if exists public.business_addons;
@@ -92,6 +93,7 @@ create table public.businesses (
   facebook_url text,
   instagram_url text,
   logo_url text,
+  default_daily_capacity integer check (default_daily_capacity >= 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint businesses_slug_format_check
@@ -118,6 +120,44 @@ values (
   'https://instagram.com/tipsytap',
   'https://api.dicebear.com/10.x/initials/svg?seed=Felix'
 );
+
+update public.businesses
+set default_daily_capacity = 2
+where slug = 'tipsy-tap';
+
+-- A missing override uses the business default; zero blocks the date.
+create table public.business_capacity_overrides (
+  business_id uuid not null references public.businesses(id) on delete cascade,
+  event_date date not null,
+  capacity integer not null check (capacity >= 0),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  primary key (business_id, event_date)
+);
+
+create trigger business_capacity_overrides_set_updated_at
+before update on public.business_capacity_overrides
+for each row execute function public.set_updated_at();
+
+-- Serialize override writes with quotation acceptance for this business.
+create or replace function public.lock_capacity_override_business()
+returns trigger language plpgsql as $$
+begin
+  if tg_op = 'DELETE' then
+    perform 1 from public.businesses where id = old.business_id for update;
+    return old;
+  end if;
+  if tg_op = 'UPDATE' and new.business_id <> old.business_id then
+    raise exception 'The override business cannot be changed';
+  end if;
+  perform 1 from public.businesses where id = new.business_id for update;
+  return new;
+end;
+$$;
+
+create trigger business_capacity_overrides_lock_business
+before insert or update or delete on public.business_capacity_overrides
+for each row execute function public.lock_capacity_override_business();
 
 -- Business users.
 create table public.users (
@@ -411,7 +451,7 @@ create table public.quotations (
   customer_name text not null,
   customer_email text not null,
   customer_phone text not null,
-  event_date timestamptz not null,
+  event_date date not null,
   start_time text not null,
   end_time text not null,
   venue text not null,
@@ -487,6 +527,9 @@ create index quotations_event_date_idx
   on public.quotations (event_date);
 create index quotations_business_id_idx
   on public.quotations (business_id);
+create index quotations_reserved_by_date_idx
+  on public.quotations (business_id, event_date)
+  where quotation_status in ('accepted', 'booked');
 
 -- Selected package/tier snapshots. A catalog package can appear only once in a quotation.
 create table public.quotation_packages (
@@ -715,6 +758,104 @@ where business.slug = 'tipsy-tap'
     or parent_area.normalized_name = seed_rules.parent_normalized_name
   );
 
+-- Capacity reads do not reveal reservation counts to the public API.
+create or replace function public.is_business_date_available(
+  p_business_id uuid,
+  p_event_date date
+)
+-- VOLATILE obtains a fresh snapshot after a waiting business-row lock.
+returns boolean language sql volatile as $$
+  select coalesce(
+    (
+      select
+        coalesce(override.capacity, business.default_daily_capacity) is null
+        or (
+          select count(*)
+          from public.quotations quotation
+          where quotation.business_id = business.id
+            and quotation.event_date = p_event_date
+            and quotation.quotation_status in ('accepted', 'booked')
+        ) < coalesce(override.capacity, business.default_daily_capacity)
+      from public.businesses business
+      left join public.business_capacity_overrides override
+        on override.business_id = business.id
+       and override.event_date = p_event_date
+      where business.id = p_business_id
+    ),
+    false
+  );
+$$;
+
+create or replace function public.get_business_unavailable_dates(
+  p_business_id uuid,
+  p_from date,
+  p_to date
+)
+returns table (unavailable_date date)
+language sql volatile as $$
+  select day.day::date
+  from generate_series(p_from::timestamp, p_to::timestamp, interval '1 day') day
+  where not public.is_business_date_available(p_business_id, day.day::date);
+$$;
+
+-- All merchant status changes use one transaction and one lock order:
+-- business row first, quotation row second.
+create or replace function public.set_quotation_status(
+  p_business_id uuid,
+  p_quotation_reference text,
+  p_status text,
+  p_close_reason text default null,
+  p_close_reason_notes text default null
+)
+returns void language plpgsql as $$
+declare
+  v_quotation_id uuid;
+  v_event_date date;
+  v_old_status text;
+begin
+  perform 1 from public.businesses
+  where id = p_business_id for update;
+  if not found then
+    raise exception 'Business not found';
+  end if;
+
+  select id, event_date, quotation_status
+  into v_quotation_id, v_event_date, v_old_status
+  from public.quotations
+  where business_id = p_business_id
+    and quotation_reference = upper(p_quotation_reference)
+  for update;
+  if not found then
+    raise exception 'Quotation not found';
+  end if;
+
+  if p_status = v_old_status then
+    return;
+  end if;
+
+  if p_status is null or p_status not in ('open', 'accepted', 'booked', 'closed')
+    or not (
+      (v_old_status = 'open' and p_status in ('accepted', 'closed'))
+      or (v_old_status = 'accepted' and p_status in ('booked', 'closed'))
+      or (v_old_status = 'booked' and p_status = 'closed')
+    ) then
+    raise exception using message = 'INVALID_STATUS_TRANSITION', errcode = 'P0001';
+  end if;
+
+  if v_old_status not in ('accepted', 'booked')
+    and p_status in ('accepted', 'booked')
+    and not public.is_business_date_available(p_business_id, v_event_date) then
+    raise exception using message = 'EVENT_DATE_UNAVAILABLE', errcode = 'P0001';
+  end if;
+
+  update public.quotations
+  set quotation_status = p_status,
+      close_reason = case when p_status = 'closed' then p_close_reason else null end,
+      close_reason_notes = case when p_status = 'closed' then p_close_reason_notes else null end
+  where id = v_quotation_id;
+end;
+$$;
+
 -- Creates or replaces an open quotation and all of its snapshots atomically.
 -- Catalog prices and transportation rules are resolved in the database so
 -- client-provided totals are never trusted.
@@ -752,8 +893,45 @@ declare
   v_quotation_reference text;
   v_quotation_package_id uuid;
   v_status text;
+  v_old_event_date date;
+  v_event_date date;
   v_sort_order integer := 0;
 begin
+  if coalesce(p_payload ->> 'eventDate', '') !~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' then
+    raise exception 'Event date must be YYYY-MM-DD';
+  end if;
+  v_event_date := (p_payload ->> 'eventDate')::date;
+  if v_event_date < (now() at time zone 'Asia/Manila')::date then
+    raise exception 'Event date cannot be in the past';
+  end if;
+
+  -- Serialize date checks and status changes for this business.
+  perform 1 from public.businesses where id = p_business_id for update;
+  if not found then
+    raise exception 'Business not found';
+  end if;
+
+  if p_quotation_id is not null then
+    select quotation.quotation_status, quotation.quotation_reference,
+           quotation.event_date
+    into v_status, v_quotation_reference, v_old_event_date
+    from public.quotations quotation
+    where quotation.id = p_quotation_id
+      and quotation.business_id = p_business_id
+    for update;
+    if not found then
+      raise exception 'Quotation not found';
+    end if;
+    if v_status <> 'open' then
+      raise exception 'Only open quotations can be edited';
+    end if;
+  end if;
+
+  if (p_quotation_id is null or v_event_date <> v_old_event_date)
+     and not public.is_business_date_available(p_business_id, v_event_date) then
+    raise exception using message = 'EVENT_DATE_UNAVAILABLE', errcode = 'P0001';
+  end if;
+
   if jsonb_typeof(v_packages) <> 'array'
      or jsonb_array_length(v_packages) = 0 then
     raise exception 'At least one package is required';
@@ -927,7 +1105,7 @@ begin
       p_payload ->> 'customerName',
       p_payload ->> 'customerEmail',
       p_payload ->> 'customerPhone',
-      (p_payload ->> 'eventDate')::timestamptz,
+      v_event_date,
       p_payload ->> 'startTime',
       p_payload ->> 'endTime',
       p_payload ->> 'venue',
@@ -944,27 +1122,12 @@ begin
     returning quotations.id, quotations.quotation_reference
       into v_quotation_id, v_quotation_reference;
   else
-    select quotation.quotation_status, quotation.quotation_reference
-    into v_status, v_quotation_reference
-    from public.quotations quotation
-    where quotation.id = p_quotation_id
-      and quotation.business_id = p_business_id
-    for update;
-
-    if not found then
-      raise exception 'Quotation not found';
-    end if;
-
-    if v_status <> 'open' then
-      raise exception 'Only open quotations can be edited';
-    end if;
-
     update public.quotations quotation
     set
       customer_name = p_payload ->> 'customerName',
       customer_email = p_payload ->> 'customerEmail',
       customer_phone = p_payload ->> 'customerPhone',
-      event_date = (p_payload ->> 'eventDate')::timestamptz,
+      event_date = v_event_date,
       start_time = p_payload ->> 'startTime',
       end_time = p_payload ->> 'endTime',
       venue = p_payload ->> 'venue',
@@ -1146,6 +1309,7 @@ $$;
 -- Browser clients use Supabase Auth only; application data goes through the API.
 -- The backend service-role client bypasses RLS for approved public/merchant flows.
 alter table public.businesses enable row level security;
+alter table public.business_capacity_overrides enable row level security;
 alter table public.users enable row level security;
 alter table public.business_packages enable row level security;
 alter table public.business_package_inclusions enable row level security;
@@ -1159,7 +1323,8 @@ alter table public.service_areas enable row level security;
 alter table public.business_service_areas enable row level security;
 
 revoke all on table
-  public.businesses, public.users, public.business_packages,
+  public.businesses, public.business_capacity_overrides,
+  public.users, public.business_packages,
   public.business_package_inclusions, public.business_package_tiers,
   public.business_package_tier_items, public.quotations,
   public.quotation_packages, public.quotation_inclusions,
@@ -1168,6 +1333,12 @@ revoke all on table
 from anon, authenticated;
 
 revoke execute on function public.save_quotation(uuid, jsonb, uuid)
+  from public, anon, authenticated;
+revoke execute on function public.is_business_date_available(uuid, date)
+  from public, anon, authenticated;
+revoke execute on function public.get_business_unavailable_dates(uuid, date, date)
+  from public, anon, authenticated;
+revoke execute on function public.set_quotation_status(uuid, text, text, text, text)
   from public, anon, authenticated;
 
 commit;
