@@ -42,32 +42,37 @@ insert into public.business_packages (
   business_id,
   name,
   badge_text,
-  description
+  description,
+  sort_order
 )
 select
   business.id,
   seed.name,
   seed.badge_text,
-  seed.description
+  seed.description,
+  seed.sort_order
 from public.businesses business
 cross join (
   values
     (
       'Premium Coffee Cart',
       'Coffee cart service',
-      'Premium hot or iced coffee for weddings, parties, and celebrations.'
+      'Premium hot or iced coffee for weddings, parties, and celebrations.',
+      1
     ),
     (
       'Croffles or Tiramisu Package',
       'Dessert package',
-      'Choose croffles or tiramisu with two flavors for your event.'
+      'Choose croffles or tiramisu with two flavors for your event.',
+      2
     ),
     (
       'Photobooth Package',
       'Unlimited photo sessions',
-      'Unlimited photobooth sessions with customized layouts and printed photos.'
+      'Unlimited photobooth sessions with customized layouts and printed photos.',
+      3
     )
-) as seed(name, badge_text, description)
+) as seed(name, badge_text, description, sort_order)
 where business.slug = 'the-brew-cart';
 
 -- Details included with every tier of the corresponding package.
@@ -101,8 +106,8 @@ join (
     (
       'Premium Coffee Cart',
       'Hot or Iced Drinks',
-      1,
-      'drink option',
+      null,
+      null,
       'Coffee can be served hot or iced.',
       2
     ),
@@ -117,40 +122,40 @@ join (
     (
       'Photobooth Package',
       'Customized Layout',
-      1,
-      'layout',
+      null,
+      null,
       'Includes a free customized photo layout.',
       1
     ),
     (
       'Photobooth Package',
       'Photo Standee Frame',
-      1,
-      'frame',
+      null,
+      null,
       'Comes with a photo standee frame.',
       2
     ),
     (
       'Photobooth Package',
       'Photo Props',
-      1,
-      'set',
+      null,
+      null,
       'Includes free use of photobooth props.',
       3
     ),
     (
       'Photobooth Package',
       'High-Quality Prints',
-      1,
-      'service',
+      null,
+      null,
       'Non-fading and smudge-proof printed photos.',
       4
     ),
     (
       'Photobooth Package',
       'Onsite Staff',
-      1,
-      'staff service',
+      null,
+      null,
       'Friendly staff will assist guests onsite.',
       5
     )
@@ -234,23 +239,23 @@ join (
       'One hundred eighty servings of the selected dessert.', 0.00::numeric, 1),
 
     -- Photobooth tier names describe the service duration.
-    ('Photobooth Package', '2 Hours', 'inclusion', 'Unlimited Photo Sessions', 1, 'service',
+    ('Photobooth Package', '2 Hours', 'inclusion', 'Unlimited Photo Sessions', null, null,
       'Unlimited photobooth sessions during the two-hour service.', 0.00::numeric, 1),
     ('Photobooth Package', '2 Hours', 'inclusion', 'Photo Templates', 2, 'templates',
       'Choose two photo templates.', 0.00::numeric, 2),
-    ('Photobooth Package', '3 Hours', 'inclusion', 'Unlimited Photo Sessions', 1, 'service',
+    ('Photobooth Package', '3 Hours', 'inclusion', 'Unlimited Photo Sessions', null, null,
       'Unlimited photobooth sessions during the three-hour service.', 0.00::numeric, 1),
     ('Photobooth Package', '3 Hours', 'inclusion', 'Photo Templates', 3, 'templates',
       'Choose three photo templates.', 0.00::numeric, 2),
 
     -- Photobooth paid upgrades and extras.
-    ('Photobooth Package', '2 Hours', 'upgrade', 'Magnetic Photos', 1, 'upgrade',
+    ('Photobooth Package', '2 Hours', 'upgrade', 'Magnetic Photos', null, null,
       'Upgrade the package prints to magnetic photos.', 500.00::numeric, 10),
-    ('Photobooth Package', '2 Hours', 'extra', 'One-Hour Extension', 1, 'hour',
+    ('Photobooth Package', '2 Hours', 'extra', 'One-Hour Extension', null, 'hour',
       'Add one hour to the photobooth service.', 1000.00::numeric, 11),
-    ('Photobooth Package', '3 Hours', 'upgrade', 'Magnetic Photos', 1, 'upgrade',
+    ('Photobooth Package', '3 Hours', 'upgrade', 'Magnetic Photos', null, null,
       'Upgrade the package prints to magnetic photos.', 800.00::numeric, 10),
-    ('Photobooth Package', '3 Hours', 'extra', 'One-Hour Extension', 1, 'hour',
+    ('Photobooth Package', '3 Hours', 'extra', 'One-Hour Extension', null, 'hour',
       'Add one hour to the photobooth service.', 1500.00::numeric, 11)
 ) as seed(
   package_name,

@@ -111,7 +111,7 @@ export function QuotationDetailsCard({
                       <li key={inclusion.id} className="flex gap-2">
                         <span className="text-green-600">✓</span>
                         <span>
-                          {inclusion.quantity === 1
+                          {inclusion.quantity == null || inclusion.unit == null
                             ? inclusion.name
                             : `${inclusion.quantity} ${inclusion.unit} — ${inclusion.name}`}
                         </span>

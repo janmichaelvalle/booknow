@@ -28,10 +28,13 @@ using public.businesses business
 where package.business_id = business.id
   and business.slug = 'mingle-mobile-bar';
 
-insert into public.business_packages (business_id, name, badge_text, description)
+insert into public.business_packages (
+  business_id, name, badge_text, description, sort_order
+)
 select business.id, 'Cocktails & Mocktails',
        'Consumable or unlimited mobile bar',
-       'Choose one consumable or unlimited fixed-price option for your event.'
+       'Choose one consumable or unlimited fixed-price option for your event.',
+       1
 from public.businesses business
 where business.slug = 'mingle-mobile-bar';
 
@@ -45,12 +48,12 @@ from public.business_packages package
 join public.businesses business on business.id = package.business_id
 cross join (
   values
-    ('Elegant Bar Setup', 1, 'setup', 'Mobile bar setup for the event.', 1),
-    ('Roaming Bar Service', 1, 'service', 'Roaming bar service for guests.', 2),
-    ('Wide Cocktail Selection', 1, 'selection', 'A selection of cocktails and mocktails; the included option count depends on the tier.', 3),
-    ('Bottle Service', 1, 'service', 'Bottle service is included.', 4),
-    ('FREE Receipt Photobooth', 1, 'service', 'Complimentary receipt photobooth.', 5),
-    ('FREE Shots', 1, 'service', 'Complimentary shots, bartender''s choice.', 6)
+    ('Elegant Bar Setup', null::integer, null::text, 'Mobile bar setup for the event.', 1),
+    ('Roaming Bar Service', null::integer, null::text, 'Roaming bar service for guests.', 2),
+    ('Wide Cocktail Selection', null::integer, null::text, 'A selection of cocktails and mocktails; the included option count depends on the tier.', 3),
+    ('Bottle Service', null::integer, null::text, 'Bottle service is included.', 4),
+    ('FREE Receipt Photobooth', null::integer, null::text, 'Complimentary receipt photobooth.', 5),
+    ('FREE Shots', null::integer, null::text, 'Complimentary shots, bartender''s choice.', 6)
 ) as seed(name, quantity, unit, description, sort_order)
 where business.slug = 'mingle-mobile-bar'
   and package.name = 'Cocktails & Mocktails';
@@ -121,16 +124,21 @@ cross join lateral (
       'Choose this many cocktail or mocktail options.', 4),
     ('Cocktail Options', details.cocktail_options, 'options',
       'Choose this many cocktail options.', 4),
-    ('All Cocktails',
-      case when details.cocktail_options is null and details.cups is null
-        then 1 else null end,
-      'selection', 'All cocktails are included.', 4),
+    ('All Cocktails', null::integer, null::text,
+      'All cocktails are included.', 4),
     ('Mocktail Options', details.mocktail_options, 'options',
       'Choose this many mocktail options.', 5)
 ) as item(name, quantity, unit, description, sort_order)
 where business.slug = 'mingle-mobile-bar'
   and package.name = 'Cocktails & Mocktails'
-  and item.quantity is not null;
+  and (
+    item.quantity is not null
+    or (
+      item.name = 'All Cocktails'
+      and details.cocktail_options is null
+      and details.cups is null
+    )
+  );
 
 -- Paid choices are scoped to individual tiers. Unlimited extra-hour prices
 -- are stored as fixed amounts equal to 25% of each tier's price.
@@ -138,7 +146,7 @@ insert into public.business_package_tier_items (
   package_tier_id, item_type, name, quantity, unit,
   description, price, sort_order
 )
-select tier.id, 'extra', item.name, 1, item.unit,
+select tier.id, 'extra', item.name, null, item.unit,
        item.description, item.price, item.sort_order
 from public.business_package_tiers tier
 join public.business_packages package on package.id = tier.package_id

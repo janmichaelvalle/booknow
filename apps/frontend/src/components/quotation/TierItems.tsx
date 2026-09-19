@@ -81,7 +81,8 @@ export function TierItems({
               </p>
             )}
             <p className="text-sm font-medium">
-              ₱{item.price.toLocaleString()} per {item.unit}
+              ₱{item.price.toLocaleString()}
+              {item.unit ? ` per ${item.unit}` : ""}
             </p>
           </div>
 

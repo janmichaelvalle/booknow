@@ -18,8 +18,8 @@ type InclusionRow = {
   id: string
   item_type: "inclusion" | "freebie"
   name: string
-  quantity: number
-  unit: string
+  quantity: number | null
+  unit: string | null
   description: string | null
   sort_order: number
 }
@@ -30,7 +30,7 @@ type ItemRow = {
   item_type: "extra" | "upgrade"
   item_name: string
   item_description: string | null
-  unit: string
+  unit: string | null
   unit_price: number | string
   quantity: number
   line_total: number | string

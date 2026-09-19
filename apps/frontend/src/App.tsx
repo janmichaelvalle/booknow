@@ -11,6 +11,9 @@ import { MerchantAppShell } from "@/components/merchant/MerchantAppShell"
 import { MerchantQuotationDetailsPage } from "@/pages/MerchantQuotationDetailsPage"
 import { MerchantSectionPage } from "@/pages/MerchantSectionPage"
 import { MerchantAvailabilityPage } from "@/pages/MerchantAvailabilityPage"
+import { MerchantPackagesPage } from "@/pages/MerchantPackagesPage"
+import { MerchantPackageEditorPage } from "@/pages/MerchantPackageEditorPage"
+import { MerchantTierEditorPage } from "@/pages/MerchantTierEditorPage"
 
 export default function App({ surface }: { surface: AppSurface }) {
   return (
@@ -59,7 +62,11 @@ function AdminRoutes() {
         <Route element={<MerchantAppShell />}>
           <Route path="/quotations" element={<QuotationsListPage />} />
           <Route path="/quotations/:quotationReference" element={<MerchantQuotationDetailsPage />} />
-          <Route path="/packages" element={<MerchantSectionPage section="Packages" />} />
+          <Route path="/packages" element={<MerchantPackagesPage />} />
+          <Route path="/packages/new" element={<MerchantPackageEditorPage />} />
+          <Route path="/packages/:packageId" element={<MerchantPackageEditorPage />} />
+          <Route path="/packages/:packageId/tiers/new" element={<MerchantTierEditorPage />} />
+          <Route path="/packages/:packageId/tiers/:tierId" element={<MerchantTierEditorPage />} />
           <Route path="/availability" element={<MerchantAvailabilityPage />} />
           <Route path="/settings" element={<MerchantSectionPage section="Settings" />} />
         </Route>

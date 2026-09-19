@@ -63,14 +63,15 @@ export type BusinessPackage = {
   name: string
   badge_text: string | null
   description: string | null
+  sort_order: number
 }
 
 export type PackageInclusion = {
   id: string
   package_id: string
   name: string
-  quantity: number
-  unit: string
+  quantity: number | null
+  unit: string | null
   description: string | null
   sort_order: number
 }
@@ -88,8 +89,8 @@ export type PackageTierItem = {
   package_tier_id: string
   item_type: TierItemType
   name: string
-  quantity: number
-  unit: string
+  quantity: number | null
+  unit: string | null
   description: string | null
   price: number
   sort_order: number
@@ -107,7 +108,7 @@ export type CalculatedSelectedItem = {
   itemType: "extra" | "upgrade"
   name: string
   description: string | null
-  unit: string
+  unit: string | null
   unitPrice: number
   quantity: number
   lineTotal: number
@@ -126,8 +127,8 @@ export type QuotationInclusion = {
   id: string
   itemType: "inclusion" | "freebie"
   name: string
-  quantity: number
-  unit: string
+  quantity: number | null
+  unit: string | null
   description: string | null
   sortOrder: number
 }
@@ -138,7 +139,7 @@ export type QuotationItem = {
   itemType: "extra" | "upgrade"
   name: string
   description: string | null
-  unit: string
+  unit: string | null
   unitPrice: number
   quantity: number
   lineTotal: number

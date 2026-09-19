@@ -34,9 +34,11 @@ export async function getBusinessBySlugOrError(slug: string): Promise<BusinessRe
 export async function getAllOfferings(businessId: string) {
   const packagesResult = await supabase
     .from("business_packages")
-    .select("id, name, badge_text, description")
+    .select("id, name, badge_text, description, sort_order")
     .eq("business_id", businessId)
     .eq("is_active", true)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true })
 
   if (packagesResult.error) {
     return {
@@ -65,6 +67,7 @@ export async function getAllOfferings(businessId: string) {
     .in("package_id", packageIds)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
+    .order("name", { ascending: true })
 
   if (packageInclusionsResult.error) {
     return {
@@ -84,6 +87,7 @@ export async function getAllOfferings(businessId: string) {
     .in("package_id", packageIds)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
+    .order("name", { ascending: true })
 
   if (packageTiersResult.error) {
     return {
@@ -104,6 +108,17 @@ export async function getAllOfferings(businessId: string) {
     }
   }
 
+  // An active package is not customer-selectable until it has an active tier.
+  const selectablePackageIds = new Set(
+    packageTiersResult.data.map((tier) => tier.package_id)
+  )
+  const selectablePackages = packagesResult.data.filter((pkg) =>
+    selectablePackageIds.has(pkg.id)
+  )
+  const selectablePackageInclusions = packageInclusionsResult.data.filter(
+    (inclusion) => selectablePackageIds.has(inclusion.package_id)
+  )
+
   // Gets all items of those tiers
   const packageTierIds = packageTiersResult.data.map((tier) => tier.id)
   const packageTierItemsResult = await supabase
@@ -122,6 +137,7 @@ export async function getAllOfferings(businessId: string) {
     .in("package_tier_id", packageTierIds)
     .eq("is_active", true)
     .order("sort_order", { ascending: true })
+    .order("name", { ascending: true })
 
   if (packageTierItemsResult.error) {
     return {
@@ -135,8 +151,8 @@ export async function getAllOfferings(businessId: string) {
 
   return {
     data: {
-      packages: packagesResult.data,
-      packageInclusions: packageInclusionsResult.data,
+      packages: selectablePackages,
+      packageInclusions: selectablePackageInclusions,
       packageTiers: packageTiersResult.data,
       packageTierItems: packageTierItemsResult.data,
     },

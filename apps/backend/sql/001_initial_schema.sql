@@ -6,6 +6,8 @@ begin;
 
 create extension if not exists pgcrypto;
 
+drop function if exists public.duplicate_business_package_tier(uuid, uuid, uuid);
+
 -- Remove the storage policy first so this script can be rerun safely.
 drop policy if exists "Anyone can upload payment proofs"
   on storage.objects;
@@ -186,11 +188,14 @@ create table public.business_packages (
   name text not null,
   badge_text text,
   description text,
+  sort_order integer not null default 0 check (sort_order >= 0),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint business_packages_business_id_name_unique
     unique (business_id, name),
+  constraint business_packages_name_not_blank_check
+    check (nullif(btrim(name), '') is not null),
   constraint business_packages_id_business_unique
     unique (id, business_id)
 );
@@ -201,23 +206,26 @@ for each row execute function public.set_updated_at();
 
 create index business_packages_business_id_idx
   on public.business_packages (business_id);
+create index business_packages_business_sort_idx
+  on public.business_packages (business_id, sort_order);
 
 insert into public.business_packages (
-  business_id, name, badge_text, description
+  business_id, name, badge_text, description, sort_order
 )
 select
   business.id,
   seed.name,
   seed.badge_text,
-  seed.description
+  seed.description,
+  seed.sort_order
 from public.businesses business
 cross join (
   values
     ('Cocktail Package', '2 cocktails per guest',
-      'Perfect for wedding and corporate events.'),
+      'Perfect for wedding and corporate events.', 1),
     ('Shooter Package', '5 shooters per guest',
-      'Best for debuts, birthdays, and college parties.')
-) as seed(name, badge_text, description)
+      'Best for debuts, birthdays, and college parties.', 2)
+) as seed(name, badge_text, description, sort_order)
 where business.slug = 'tipsy-tap';
 
 -- Inclusions shared by every tier of a package.
@@ -226,15 +234,22 @@ create table public.business_package_inclusions (
   package_id uuid not null
     references public.business_packages(id) on delete cascade,
   name text not null,
-  quantity integer not null check (quantity > 0),
-  unit text not null,
+  quantity integer check (quantity > 0),
+  unit text,
   description text,
   sort_order integer not null default 0 check (sort_order >= 0),
   is_active boolean not null default true,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint business_package_inclusions_package_name_unique
-    unique (package_id, name)
+    unique (package_id, name),
+  constraint business_package_inclusions_name_not_blank_check
+    check (nullif(btrim(name), '') is not null),
+  constraint business_package_inclusions_quantity_unit_pair_check
+    check (
+      (quantity is null and unit is null)
+      or (quantity is not null and nullif(btrim(unit), '') is not null)
+    )
 );
 
 create trigger business_package_inclusions_set_updated_at
@@ -260,13 +275,13 @@ join (
   values
     ('Cocktail Package', 'Bartenders', 2, 'people',
       'Professional bartenders for the event.', 1),
-    ('Cocktail Package', 'Mobile bar counter', 1, 'setup',
+    ('Cocktail Package', 'Mobile bar counter', null, null,
       'Mobile counter setup for the event.', 2),
     ('Cocktail Package', 'Service duration', 4, 'hours',
       'Four hours of mobile bar service.', 3),
     ('Shooter Package', 'Bartenders', 2, 'people',
       'Professional bartenders for the event.', 1),
-    ('Shooter Package', 'Mobile bar counter', 1, 'setup',
+    ('Shooter Package', 'Mobile bar counter', null, null,
       'Mobile counter setup for the event.', 2),
     ('Shooter Package', 'Service duration', 4, 'hours',
       'Four hours of mobile bar service.', 3)
@@ -331,8 +346,8 @@ create table public.business_package_tier_items (
     item_type in ('inclusion', 'extra', 'upgrade', 'freebie')
   ),
   name text not null,
-  quantity integer not null check (quantity > 0),
-  unit text not null,
+  quantity integer check (quantity > 0),
+  unit text,
   description text,
   price numeric(10,2) not null default 0 check (price >= 0),
   sort_order integer not null default 0 check (sort_order >= 0),
@@ -341,6 +356,23 @@ create table public.business_package_tier_items (
   updated_at timestamptz not null default now(),
   constraint business_package_tier_items_item_type_name_unique
     unique (package_tier_id, item_type, name),
+  constraint business_package_tier_items_name_not_blank_check
+    check (nullif(btrim(name), '') is not null),
+  constraint business_package_tier_items_quantity_unit_check
+    check (
+      (
+        item_type in ('inclusion', 'freebie')
+        and (
+          (quantity is null and unit is null)
+          or (quantity is not null and nullif(btrim(unit), '') is not null)
+        )
+      )
+      or (
+        item_type in ('extra', 'upgrade')
+        and quantity is null
+        and (unit is null or nullif(btrim(unit), '') is not null)
+      )
+    ),
   constraint business_package_tier_items_price_matches_type_check
     check (
       (item_type in ('inclusion', 'freebie') and price = 0)
@@ -354,6 +386,68 @@ for each row execute function public.set_updated_at();
 
 create index business_package_tier_items_tier_id_idx
   on public.business_package_tier_items (package_tier_id);
+
+-- Duplicate a tier and all of its catalog items atomically. The copy starts
+-- hidden so a merchant can review it before exposing it publicly.
+create or replace function public.duplicate_business_package_tier(
+  p_business_id uuid,
+  p_package_id uuid,
+  p_tier_id uuid
+)
+returns uuid
+language plpgsql
+as $$
+declare
+  v_source public.business_package_tiers%rowtype;
+  v_copy_id uuid;
+  v_copy_name text;
+  v_suffix integer := 1;
+  v_sort_order integer;
+begin
+  select tier.* into v_source
+  from public.business_package_tiers tier
+  join public.business_packages package on package.id = tier.package_id
+  where tier.id = p_tier_id
+    and tier.package_id = p_package_id
+    and package.business_id = p_business_id
+  for update of tier;
+
+  if not found then
+    raise exception 'Tier not found';
+  end if;
+
+  v_copy_name := v_source.name || ' (Copy)';
+  while exists (
+    select 1 from public.business_package_tiers tier
+    where tier.package_id = p_package_id and tier.name = v_copy_name
+  ) loop
+    v_suffix := v_suffix + 1;
+    v_copy_name := v_source.name || ' (Copy ' || v_suffix || ')';
+  end loop;
+
+  select coalesce(max(tier.sort_order), 0) + 1 into v_sort_order
+  from public.business_package_tiers tier
+  where tier.package_id = p_package_id;
+
+  insert into public.business_package_tiers (
+    package_id, name, price, sort_order, is_active
+  ) values (
+    p_package_id, v_copy_name, v_source.price, v_sort_order, false
+  ) returning id into v_copy_id;
+
+  insert into public.business_package_tier_items (
+    package_tier_id, item_type, name, quantity, unit, description,
+    price, sort_order, is_active
+  )
+  select
+    v_copy_id, item.item_type, item.name, item.quantity, item.unit,
+    item.description, item.price, item.sort_order, item.is_active
+  from public.business_package_tier_items item
+  where item.package_tier_id = p_tier_id;
+
+  return v_copy_id;
+end;
+$$;
 
 insert into public.business_package_tier_items (
   package_tier_id,
@@ -395,37 +489,37 @@ join (
       'Five shooters per guest.', 0.00, 1),
     ('Shooter Package', '100 Guests', 'inclusion', 'Shooters', 500, 'servings',
       'Five shooters per guest.', 0.00, 1),
-    ('Cocktail Package', '30 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Cocktail Package', '30 Guests', 'extra', 'San Miguel Flavored Beer', null, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Cocktail Package', '50 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Cocktail Package', '50 Guests', 'extra', 'San Miguel Flavored Beer', null, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Cocktail Package', '75 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Cocktail Package', '75 Guests', 'extra', 'San Miguel Flavored Beer', null, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Cocktail Package', '100 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Cocktail Package', '100 Guests', 'extra', 'San Miguel Flavored Beer', null, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Cocktail Package', '30 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Cocktail Package', '30 Guests', 'extra', 'Jack Daniel''s Old No. 7', null, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Cocktail Package', '50 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Cocktail Package', '50 Guests', 'extra', 'Jack Daniel''s Old No. 7', null, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Cocktail Package', '75 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Cocktail Package', '75 Guests', 'extra', 'Jack Daniel''s Old No. 7', null, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Cocktail Package', '100 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Cocktail Package', '100 Guests', 'extra', 'Jack Daniel''s Old No. 7', null, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Shooter Package', '30 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Shooter Package', '30 Guests', 'extra', 'San Miguel Flavored Beer', null, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Shooter Package', '50 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Shooter Package', '50 Guests', 'extra', 'San Miguel Flavored Beer', null, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Shooter Package', '75 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Shooter Package', '75 Guests', 'extra', 'San Miguel Flavored Beer', null, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Shooter Package', '100 Guests', 'extra', 'San Miguel Flavored Beer', 1, 'case',
+    ('Shooter Package', '100 Guests', 'extra', 'San Miguel Flavored Beer', null, 'case',
       'Lychee 330 mL Can, case of 24.', 1629.00, 10),
-    ('Shooter Package', '30 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Shooter Package', '30 Guests', 'extra', 'Jack Daniel''s Old No. 7', null, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Shooter Package', '50 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Shooter Package', '50 Guests', 'extra', 'Jack Daniel''s Old No. 7', null, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Shooter Package', '75 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Shooter Package', '75 Guests', 'extra', 'Jack Daniel''s Old No. 7', null, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11),
-    ('Shooter Package', '100 Guests', 'extra', 'Jack Daniel''s Old No. 7', 1, 'bottle',
+    ('Shooter Package', '100 Guests', 'extra', 'Jack Daniel''s Old No. 7', null, 'bottle',
       'Tennessee Whiskey 1L.', 1680.00, 11)
 ) as seed(
   package_name,
@@ -582,8 +676,13 @@ create table public.quotation_inclusions (
     item_type in ('inclusion', 'freebie')
   ),
   name text not null,
-  quantity integer not null check (quantity > 0),
-  unit text not null,
+  quantity integer check (quantity > 0),
+  unit text,
+  constraint quotation_inclusions_quantity_unit_pair_check
+    check (
+      (quantity is null and unit is null)
+      or (quantity is not null and nullif(btrim(unit), '') is not null)
+    ),
   description text,
   sort_order integer not null default 0 check (sort_order >= 0),
   created_at timestamptz not null default now(),
@@ -606,7 +705,7 @@ create table public.quotation_items (
   ),
   item_name text not null,
   item_description text,
-  unit text not null,
+  unit text,
   unit_price numeric(10,2) not null check (unit_price >= 0),
   quantity integer not null check (quantity > 0),
   line_total numeric(10,2) not null check (line_total >= 0),
@@ -892,6 +991,12 @@ declare
   v_quotation_id uuid;
   v_quotation_reference text;
   v_quotation_package_id uuid;
+  v_existing_quotation_package_id uuid;
+  v_existing_tier_id uuid;
+  v_existing_package_total numeric(10,2);
+  v_existing_items_total numeric(10,2);
+  v_package_unchanged boolean;
+  v_preserved_package_ids uuid[] := '{}'::uuid[];
   v_status text;
   v_old_event_date date;
   v_event_date date;
@@ -1009,9 +1114,82 @@ begin
   -- Validate every selection and calculate authoritative totals first.
   for v_package in select value from jsonb_array_elements(v_packages)
   loop
+    v_sort_order := v_sort_order + 1;
     v_package_id := (v_package ->> 'packageId')::uuid;
     v_tier_id := (v_package ->> 'tierId')::uuid;
+    v_selected_items := coalesce(v_package -> 'selectedItems', '[]'::jsonb);
 
+    if jsonb_typeof(v_selected_items) <> 'array' then
+      raise exception 'Selected items must be an array';
+    end if;
+
+    if exists (
+      select 1
+      from jsonb_array_elements(v_selected_items) item_input
+      group by item_input ->> 'tierItemId'
+      having count(*) > 1
+    ) then
+      raise exception 'A package item can be selected only once';
+    end if;
+
+    -- An unchanged package selection keeps its historical snapshot and prices,
+    -- even if the merchant has since edited or hidden the catalog records.
+    v_package_unchanged := false;
+    v_existing_quotation_package_id := null;
+    if p_quotation_id is not null then
+      select
+        snapshot.id,
+        snapshot.package_tier_id,
+        snapshot.package_total,
+        snapshot.selected_items_total
+      into
+        v_existing_quotation_package_id,
+        v_existing_tier_id,
+        v_existing_package_total,
+        v_existing_items_total
+      from public.quotation_packages snapshot
+      where snapshot.quotation_id = p_quotation_id
+        and snapshot.package_id = v_package_id;
+
+      if found and v_existing_tier_id = v_tier_id then
+        select
+          count(*) = jsonb_array_length(v_selected_items)
+          and not exists (
+            select 1
+            from jsonb_array_elements(v_selected_items) item_input
+            where not exists (
+              select 1
+              from public.quotation_items snapshot_item
+              where snapshot_item.quotation_package_id =
+                    v_existing_quotation_package_id
+                and snapshot_item.tier_item_id =
+                    (item_input ->> 'tierItemId')::uuid
+                and snapshot_item.quantity =
+                    (item_input ->> 'quantity')::integer
+            )
+          )
+        into v_package_unchanged
+        from public.quotation_items snapshot_item
+        where snapshot_item.quotation_package_id =
+              v_existing_quotation_package_id;
+      end if;
+    end if;
+
+    if v_package_unchanged then
+      v_packages_total := v_packages_total + v_existing_package_total;
+      v_selected_items_total :=
+        v_selected_items_total + v_existing_items_total;
+      v_preserved_package_ids := array_append(
+        v_preserved_package_ids,
+        v_existing_quotation_package_id
+      );
+      update public.quotation_packages snapshot
+      set sort_order = v_sort_order
+      where snapshot.id = v_existing_quotation_package_id;
+      continue;
+    end if;
+
+    -- New or explicitly changed selections must use the current active catalog.
     select
       package.name,
       tier.name,
@@ -1035,20 +1213,6 @@ begin
 
     v_package_total := v_price;
     v_package_items_total := 0;
-    v_selected_items := coalesce(v_package -> 'selectedItems', '[]'::jsonb);
-
-    if jsonb_typeof(v_selected_items) <> 'array' then
-      raise exception 'Selected items must be an array';
-    end if;
-
-    if exists (
-      select 1
-      from jsonb_array_elements(v_selected_items) item_input
-      group by item_input ->> 'tierItemId'
-      having count(*) > 1
-    ) then
-      raise exception 'A package item can be selected only once';
-    end if;
 
     for v_selected_item in
       select value from jsonb_array_elements(v_selected_items)
@@ -1056,7 +1220,7 @@ begin
       v_tier_item_id := (v_selected_item ->> 'tierItemId')::uuid;
       v_item_quantity := (v_selected_item ->> 'quantity')::integer;
 
-      if v_item_quantity <= 0 then
+      if v_item_quantity is null or v_item_quantity <= 0 then
         raise exception 'Selected item quantity must be greater than zero';
       end if;
 
@@ -1144,7 +1308,10 @@ begin
 
     v_quotation_id := p_quotation_id;
     delete from public.quotation_packages
-    where quotation_packages.quotation_id = v_quotation_id;
+    where quotation_packages.quotation_id = v_quotation_id
+      and not (
+        quotation_packages.id = any(v_preserved_package_ids)
+      );
   end if;
 
   -- Insert immutable package, inclusion, and selected-item snapshots.
@@ -1154,6 +1321,17 @@ begin
     v_sort_order := v_sort_order + 1;
     v_package_id := (v_package ->> 'packageId')::uuid;
     v_tier_id := (v_package ->> 'tierId')::uuid;
+
+    -- This exact package selection already retained its historical snapshot.
+    if exists (
+      select 1
+      from public.quotation_packages snapshot
+      where snapshot.quotation_id = v_quotation_id
+        and snapshot.package_id = v_package_id
+        and snapshot.id = any(v_preserved_package_ids)
+    ) then
+      continue;
+    end if;
 
     select
       package.name,
@@ -1167,7 +1345,10 @@ begin
     join public.business_package_tiers tier
       on tier.package_id = package.id
     where package.id = v_package_id
-      and tier.id = v_tier_id;
+      and package.business_id = p_business_id
+      and package.is_active
+      and tier.id = v_tier_id
+      and tier.is_active;
 
     v_package_total := v_price;
     v_package_items_total := 0;
@@ -1180,7 +1361,10 @@ begin
       v_item_quantity := (v_selected_item ->> 'quantity')::integer;
       select item.price into v_item_price
       from public.business_package_tier_items item
-      where item.id = v_tier_item_id;
+      where item.id = v_tier_item_id
+        and item.package_tier_id = v_tier_id
+        and item.item_type in ('extra', 'upgrade')
+        and item.is_active;
       v_package_items_total :=
         v_package_items_total + (v_item_price * v_item_quantity);
     end loop;
@@ -1275,7 +1459,10 @@ begin
         v_item_unit,
         v_item_price
       from public.business_package_tier_items item
-      where item.id = v_tier_item_id;
+      where item.id = v_tier_item_id
+        and item.package_tier_id = v_tier_id
+        and item.item_type in ('extra', 'upgrade')
+        and item.is_active;
 
       insert into public.quotation_items (
         quotation_package_id,
@@ -1333,6 +1520,8 @@ revoke all on table
 from anon, authenticated;
 
 revoke execute on function public.save_quotation(uuid, jsonb, uuid)
+  from public, anon, authenticated;
+revoke execute on function public.duplicate_business_package_tier(uuid, uuid, uuid)
   from public, anon, authenticated;
 revoke execute on function public.is_business_date_available(uuid, date)
   from public, anon, authenticated;

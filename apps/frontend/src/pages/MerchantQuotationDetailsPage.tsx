@@ -148,7 +148,9 @@ export function MerchantQuotationDetailsPage() {
                       <ul className="space-y-1 text-muted-foreground">
                         {pkg.inclusions.map((item) => (
                           <li key={item.id}>
-                            {item.quantity === 1 ? item.name : `${item.quantity} ${item.unit} — ${item.name}`}
+                            {item.quantity == null || item.unit == null
+                              ? item.name
+                              : `${item.quantity} ${item.unit} — ${item.name}`}
                           </li>
                         ))}
                       </ul>

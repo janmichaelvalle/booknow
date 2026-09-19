@@ -95,8 +95,8 @@ export type QuotationInclusion = {
   id: string
   itemType: "inclusion" | "freebie"
   name: string
-  quantity: number
-  unit: string
+  quantity: number | null
+  unit: string | null
   description: string | null
   sortOrder: number
 }
@@ -107,7 +107,7 @@ export type QuotationItem = {
   itemType: "extra" | "upgrade"
   name: string
   description: string | null
-  unit: string
+  unit: string | null
   unitPrice: number
   quantity: number
   lineTotal: number

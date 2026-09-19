@@ -179,7 +179,7 @@ export function PackageDetails({
                       <li key={item.displayKey} className="flex gap-2">
                         <span className="text-green-600">✓</span>
                         <span>
-                          {item.quantity === 1
+                          {item.quantity == null || item.unit == null
                             ? item.name
                             : `${item.quantity} ${item.unit} — ${item.name}`}
                         </span>
